@@ -181,10 +181,10 @@ Definition main_spec :=
  DECLARE _main
   WITH gv : globals
   PRE  [] main_pre prog tt gv
-  POST [ tint ]
-    PROP() 
-    RETURN (Vint (Int.repr (result 999)))
-    SEP().
+  POST [ tint ]  
+     PROP() 
+     RETURN (Vint (Int.repr (result 999)))
+     SEP(TT).
 
 Definition Gprog := [aux_spec; solution_spec; main_spec].
 
@@ -270,5 +270,7 @@ Lemma body_main: semax_body Vprog Gprog f_main main_spec.
 Proof.
   start_function. forward_call 999.
   + lia.
-  + forward. clear Delta.
-    
+  + forward.
+Qed.
+
+Print body_main.
