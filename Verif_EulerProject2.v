@@ -513,17 +513,13 @@ Proof.
   + entailer!.
   + forward. forward. remember (Z.to_nat i) as W. destruct W.
     - forward. forward. entailer!. Exists 1. entailer!.
-    - forward. forward. entailer!. Exists (i + 1). re entailer!. repeat split.
-      * replace (Z.to_nat (i + 1)) with (S (S W)) by lia. pose proof (even_fib_increasing (S W)). lia.
-      * replace (Z.to_nat (i + 1)) with (S (S W)) by lia. unfold even_fib.
+    - forward. forward. entailer!. Exists (i + 1).
+      replace (Z.to_nat (i + 1)) with (S (S W)) by lia. entailer!. repeat split.
+      * pose proof (even_fib_increasing (S W)). lia.
+      * unfold even_fib.
         rewrite recurrent_sequence_unfold. ring_simplify. admit.
-      * replace (Z.to_nat (i + 1)) with (S (S W)) by lia. reflexivity.
-      * replace (Z.to_nat (i + 1)) with (S (S W)) by lia. unfold even_fib. rewrite recurrent_sequence_unfold.
-        f_equal. f_equal. lia.
-      * replace (Z.to_nat (i + 1)) with (S (S W)) by lia. rewrite seq_S. simpl.
+      * unfold even_fib. rewrite recurrent_sequence_unfold. f_equal. f_equal. lia.
+      * rewrite seq_S. simpl.
         rewrite map_app. rewrite sum_Z_app. simpl. f_equal. f_equal. lia.
   + lia.
-
- unfold even_fib. rewrite recurrent_sequence_unfold.
-        
-
+Admitted.
