@@ -502,24 +502,22 @@ Definition Gprog := [main_spec].
 Lemma body_main: semax_body Vprog Gprog f_main main_spec.
 Proof.
   start_function. forward. forward. forward.
-  forward_while (EX i: Z,
-    PROP (0 <= even_fib (Z.to_nat i) <= 1000000)
-    LOCAL (temp _a (Vint (Int.repr (match (Z.to_nat i) with | O => 0 | S n => even_fib n end)));
-           temp _b (Vint (Int.repr (even_fib (Z.to_nat i))));
-           temp _result (Vint (Int.repr (sum_Z (map even_fib (seq 0 (Z.to_nat i))))));
-           gvars gv)
+  forward_while (EX i: nat,
+    PROP (0 <= even_fib i <= 1000000)
+    LOCAL (temp _a (Vint (Int.repr (match i with O => 0 | S n => even_fib n end)));
+           temp _b (Vint (Int.repr (even_fib i)));
+           temp _result (Vint (Int.repr (sum_Z (map even_fib (seq 0 i))))))
     SEP (TT)).
-  + Exists 0. entailer!. simpl. change (even_fib 0) with 2. lia.
+  + entailer!. Exists 0%nat. entailer!. change (even_fib O) with 2. lia.
   + entailer!.
-  + forward. forward. remember (Z.to_nat i) as W. destruct W.
-    - forward. forward. entailer!. Exists 1. entailer!.
-    - forward. forward. entailer!. Exists (i + 1).
-      replace (Z.to_nat (i + 1)) with (S (S W)) by lia. entailer!. repeat split.
-      * pose proof (even_fib_increasing (S W)). lia.
-      * unfold even_fib.
-        rewrite recurrent_sequence_unfold. ring_simplify. admit.
+  + destruct i.
+    - forward. forward. forward. forward. Exists 1%nat. entailer!.
+    - forward. forward. forward. forward. Exists (S (S i)). entailer!. repeat split.
+      * apply even_fib_nonneg.
+      * admit.
       * unfold even_fib. rewrite recurrent_sequence_unfold. f_equal. f_equal. lia.
-      * rewrite seq_S. simpl.
-        rewrite map_app. rewrite sum_Z_app. simpl. f_equal. f_equal. lia.
+      * rewrite seq_S. simpl. f_equal. f_equal. unfold sum_Z. rewrite map_app.
+        rewrite fold_right_app. simpl. rewrite aux2. lia.
   + lia.
 Admitted.
+ 
