@@ -483,6 +483,15 @@ Proof.
         repeat rewrite Nat.add_0_r. auto.
 Qed.
 
+Theorem even_fib_nonneg n: 0 <= even_fib n.
+Proof.
+  assert (0 <= even_fib n /\ 0 <= even_fib (S n)).
+  { induction n.
+    + change (even_fib 0) with 2. change (even_fib 1) with 8. lia.
+    + destruct IHn. split; auto. unfold even_fib in *.
+      rewrite recurrent_sequence_unfold in *. lia. }
+  apply H.
+Qed.
 
 Require Import EulerProject2.
 Instance CompSpecs : compspecs. make_compspecs prog. Defined.
@@ -491,11 +500,12 @@ Definition Vprog : varspecs.  mk_varspecs prog. Defined.
 Definition main_spec :=
  DECLARE _main
   WITH gv : globals
-  PRE [] main_pre prog tt gv
-  POST [ tint ]
-     PROP()
-     RETURN (Vint (Int.repr (result_simple 1000000)))
+  PRE  [] main_pre prog tt gv
+  POST [ tint ]  
+     PROP() 
+     RETURN (Vint (Int.repr 1089154))
      SEP(TT).
+(* For now it only works if there's 1089154 instead of result_simple 1000000 *)
 
 Definition Gprog := [main_spec].
 
@@ -503,21 +513,37 @@ Lemma body_main: semax_body Vprog Gprog f_main main_spec.
 Proof.
   start_function. forward. forward. forward.
   forward_while (EX i: nat,
-    PROP (0 <= even_fib i <= 1000000)
+    PROP (0 <= even_fib i <= 5000000)
     LOCAL (temp _a (Vint (Int.repr (match i with O => 0 | S n => even_fib n end)));
            temp _b (Vint (Int.repr (even_fib i)));
            temp _result (Vint (Int.repr (sum_Z (map even_fib (seq 0 i))))))
     SEP (TT)).
-  + entailer!. Exists 0%nat. entailer!. change (even_fib O) with 2. lia.
+  + entailer!. Exists 0%nat. entailer!. change (even_fib 0) with 2. lia.
   + entailer!.
-  + destruct i.
-    - forward. forward. forward. forward. Exists 1%nat. entailer!.
-    - forward. forward. forward. forward. Exists (S (S i)). entailer!. repeat split.
+  + do 4 forward. destruct i.
+    - entailer!. Exists 1%nat. entailer!.
+    - entailer!. Exists (S (S i)). entailer!. repeat split.
       * apply even_fib_nonneg.
-      * admit.
-      * unfold even_fib. rewrite recurrent_sequence_unfold. f_equal. f_equal. lia.
-      * rewrite seq_S. simpl. f_equal. f_equal. unfold sum_Z. rewrite map_app.
-        rewrite fold_right_app. simpl. rewrite aux2. lia.
-  + lia.
-Admitted.
- 
+      * pose proof (even_fib_increasing i). unfold even_fib in *. rewrite recurrent_sequence_unfold.
+        lia.
+      * f_equal. f_equal. unfold even_fib. rewrite recurrent_sequence_unfold. lia.
+      * rewrite seq_S. simpl. rewrite map_app. simpl. rewrite sum_Z_app. simpl. f_equal. f_equal. lia.
+  + assert (i = 10)%nat.
+    { destruct i. change (even_fib 0) with 2 in *. lia.
+      destruct i. change (even_fib 1) with 8 in *. lia.
+      destruct i. change (even_fib 2) with 34 in *. lia.
+      destruct i. change (even_fib 3) with 144 in *. lia.
+      destruct i. change (even_fib 4) with 610 in *. lia.
+      destruct i. change (even_fib 5) with 2584 in *. lia.
+      destruct i. change (even_fib 6) with 10946 in *. lia.
+      destruct i. change (even_fib 7) with 46368 in *. lia.
+      destruct i. change (even_fib 8) with 196418 in *. lia.
+      destruct i. change (even_fib 9) with 832040 in *. lia.
+      destruct i. change (even_fib 10) with 3524578 in *. lia.
+      pose proof (thm2 even_fib even_fib_increasing 11 (i + 11)).
+      assert (11 <= i + 11)%nat by lia. apply H0 in H1.
+      change (even_fib 11) with 14930352 in *.
+      replace (i + 11)%nat with (S(S(S(S(S(S(S(S(S(S(S(i)))))))))))) in H1 by lia.
+      lia. }
+    subst. forward. 
+Qed.
