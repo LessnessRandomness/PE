@@ -73,41 +73,56 @@ Definition ___compcert_va_int64 : ident := $"__compcert_va_int64".
 Definition _a : ident := $"a".
 Definition _b : ident := $"b".
 Definition _main : ident := $"main".
+Definition _max : ident := $"max".
 Definition _result : ident := $"result".
+Definition _sum : ident := $"sum".
 Definition _t : ident := $"t".
+Definition _t'1 : ident := 128%positive.
+
+Definition f_result := {|
+  fn_return := tuint;
+  fn_callconv := cc_default;
+  fn_params := ((_max, tuint) :: nil);
+  fn_vars := nil;
+  fn_temps := ((_a, tuint) :: (_b, tuint) :: (_t, tuint) :: (_sum, tuint) ::
+               nil);
+  fn_body :=
+(Ssequence
+  (Sset _sum (Econst_int (Int.repr 0) tint))
+  (Ssequence
+    (Sset _a (Econst_int (Int.repr 0) tint))
+    (Ssequence
+      (Sset _b (Econst_int (Int.repr 2) tint))
+      (Ssequence
+        (Swhile
+          (Ebinop Ole (Etempvar _b tuint) (Etempvar _max tuint) tint)
+          (Ssequence
+            (Sset _sum
+              (Ebinop Oadd (Etempvar _sum tuint) (Etempvar _b tuint) tuint))
+            (Ssequence
+              (Sset _t (Etempvar _a tuint))
+              (Ssequence
+                (Sset _a (Etempvar _b tuint))
+                (Sset _b
+                  (Ebinop Oadd
+                    (Ebinop Omul (Econst_int (Int.repr 4) tint)
+                      (Etempvar _a tuint) tuint) (Etempvar _t tuint) tuint))))))
+        (Sreturn (Some (Etempvar _sum tuint)))))))
+|}.
 
 Definition f_main := {|
   fn_return := tint;
   fn_callconv := cc_default;
   fn_params := nil;
   fn_vars := nil;
-  fn_temps := ((_a, tuint) :: (_b, tuint) :: (_t, tuint) ::
-               (_result, tuint) :: nil);
+  fn_temps := ((_t'1, tuint) :: nil);
   fn_body :=
 (Ssequence
   (Ssequence
-    (Sset _result (Econst_int (Int.repr 0) tint))
-    (Ssequence
-      (Sset _a (Econst_int (Int.repr 0) tint))
-      (Ssequence
-        (Sset _b (Econst_int (Int.repr 2) tint))
-        (Ssequence
-          (Swhile
-            (Ebinop Ole (Etempvar _b tuint)
-              (Econst_int (Int.repr 1000000) tint) tint)
-            (Ssequence
-              (Sset _result
-                (Ebinop Oadd (Etempvar _result tuint) (Etempvar _b tuint)
-                  tuint))
-              (Ssequence
-                (Sset _t (Etempvar _a tuint))
-                (Ssequence
-                  (Sset _a (Etempvar _b tuint))
-                  (Sset _b
-                    (Ebinop Oadd
-                      (Ebinop Omul (Econst_int (Int.repr 4) tint)
-                        (Etempvar _a tuint) tuint) (Etempvar _t tuint) tuint))))))
-          (Sreturn (Some (Etempvar _result tuint)))))))
+    (Scall (Some _t'1)
+      (Evar _result (Tfunction (Tcons tuint Tnil) tuint cc_default))
+      ((Econst_int (Int.repr 1000000) tint) :: nil))
+    (Sreturn (Some (Etempvar _t'1 tuint))))
   (Sreturn (Some (Econst_int (Int.repr 0) tint))))
 |}.
 
@@ -367,10 +382,10 @@ Definition global_definitions : list (ident * globdef fundef type) :=
                      {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|}))
      (Tcons tint Tnil) tvoid
      {|cc_vararg:=true; cc_unproto:=false; cc_structret:=false|})) ::
- (_main, Gfun(Internal f_main)) :: nil).
+ (_result, Gfun(Internal f_result)) :: (_main, Gfun(Internal f_main)) :: nil).
 
 Definition public_idents : list ident :=
-(_main :: ___builtin_debug :: ___builtin_write32_reversed ::
+(_main :: _result :: ___builtin_debug :: ___builtin_write32_reversed ::
  ___builtin_write16_reversed :: ___builtin_read32_reversed ::
  ___builtin_read16_reversed :: ___builtin_fnmsub :: ___builtin_fnmadd ::
  ___builtin_fmsub :: ___builtin_fmadd :: ___builtin_fmin ::

@@ -1,16 +1,20 @@
 #include <stddef.h>
 
+unsigned int result(unsigned int max) {
+    unsigned int a, b, t, sum;
+    sum = 0;
+    a = 0;
+    b = 2;
+    while (b <= max) {
+        sum += b;
+        t = a;
+        a = b;
+        b = 4 * a + t;
+    }
+    return sum;
+}
+
 int main(void) {
-  unsigned a, b, t, result;
-  result = 0;
-  a = 0;
-  b = 2;
-  while (b <= 1000000) {
-    result += b;
-    t = a;
-    a = b;
-    b = 4 * a + t;
-  }
-  return result;
+    return result(1000000);
 }
 
