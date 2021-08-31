@@ -643,8 +643,7 @@ Proof.
   apply H.
 Qed.
 
-(*Theorem test (n: nat) (M: Z):
-  even_fibonacci_efficient (P (S i)) <= M *)
+
 
 Require Import EulerProject2.
 Instance CompSpecs : compspecs. make_compspecs prog. Defined.
@@ -710,7 +709,8 @@ Proof.
         { split; try rep_lia. destruct H1. apply (increasing_thm2 even_fibonacci_efficient_increasing) in H3.
           assert (1 <= M) by lia. apply thm06 in H4. rep_lia. }
       * Exists (S i). entailer!. repeat split.
-        ++ rewrite Int.unsigned_repr in HRE. admit.
+        ++ rewrite Int.unsigned_repr in HRE. clear H1. assert (even_fibonacci_efficient i <= M) by lia. clear HRE.
+           rewrite <- (last_value_le_thm even_fibonacci_efficient_increasing) in H1. auto.
            { split.
              + pose proof (even_fibonacci_efficient_greater_than_1 i). lia.
              + destruct H1. apply (increasing_thm2 even_fibonacci_efficient_increasing) in H2.
@@ -725,12 +725,14 @@ Proof.
         inversion H2.
         ++ symmetry in H3. rewrite increasing_thm5 in H3. lia.
         ++ apply Peano.le_n_S in H3. rewrite H1 in H3. clear H1 H2 m.
-           admit.
+           assert (even_fibonacci_efficient (S i) <= M -> False) by lia.
+           rewrite <- (last_value_le_thm even_fibonacci_efficient_increasing) in H1.
+           assert (last_value_le even_fibonacci_efficient_increasing M <= S i)%nat by lia. lia.
         ++ split.
            -- pose proof (even_fibonacci_efficient_greater_than_1 (S i)). lia.
            -- destruct H1. apply (increasing_thm2 even_fibonacci_efficient_increasing) in H2.
               assert (1 <= M) by lia. apply thm06 in H3. rep_lia.
-Admitted.
+Qed.
 
 Lemma body_main: semax_body Vprog Gprog f_main main_spec.
 Proof.
