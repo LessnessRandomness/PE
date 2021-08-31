@@ -232,7 +232,7 @@ Proof.
          -- apply Z.div_pos. lia. lia.
          -- assert (number / 15 <= 66).
             change 66 with (1000/15). apply Z.div_le_mono. lia. lia. lia.
-      ++ deadvars!. forward.
+      ++ deadvars!. time forward.
          -- entailer!.
             assert (0 <= number / 15 <= 66).
             { split.
@@ -270,7 +270,5 @@ Lemma body_main: semax_body Vprog Gprog f_main main_spec.
 Proof.
   start_function. forward_call 999.
   + lia.
-  + forward.
+  + remember (result 999) as W. clear HeqW. time forward.
 Qed.
-
-Print body_main.

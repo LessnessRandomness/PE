@@ -406,7 +406,7 @@ Proof.
   apply sum_Z_thm1 in H1. lia.
 Qed.
 
-Theorem last_value_le_S (f: sequence Z) (H: increasing f) (M: Z):
+Theorem last_value_le_inc (f: sequence Z) (H: increasing f) (M: Z):
   (last_value_le H (M + 1) =
   last_value_le H M + 
   if Z_lt_le_dec (M + 1) (f (last_value_le H M))
@@ -466,7 +466,7 @@ Proof.
   + assert (0 <= M) by lia. pattern M. revert H0. apply natlike_ind.
     - simpl. auto.
     - intros. replace (Z.succ x) with (x + 1) by lia.
-      unfold increasing_sequence_with_max_value in *. repeat rewrite last_value_le_S.
+      unfold increasing_sequence_with_max_value in *. repeat rewrite last_value_le_inc.
       pose proof (last_value_le_thm fibonacci_increasing x).
       pose proof (last_value_le_thm even_fibonacci_efficient_increasing x).
       repeat (destruct Z_lt_le_dec; destruct Z.eq_dec; destruct Z_lt_le_dec; try destruct Z.eq_dec).
@@ -533,34 +533,118 @@ Proof.
            replace ((3 * x0 + 1 + 1) / 3)%nat with x0 in *. rewrite even_fibonacci_efficient_thm in *.
            replace (3 * x0 + 1)%nat with (S (3 * x0))%nat in e by lia. lia.
            { replace (3 * x0 + 1 + 1)%nat with (2 + x0 * 3)%nat by lia.
-             rewrite Nat.div_add. simpl. auto. lia. }
+            rewrite Nat.div_add. simpl. auto. lia. }
         ++ rewrite sum_Z_app. simpl. lia.
       * repeat rewrite Nat.add_0_r. auto.
       * exfalso. assert (fibonacci (last_value_le fibonacci_increasing x) <= x) by lia. apply H2 in H4. lia.
       * repeat rewrite Nat.add_0_r. auto.
 Qed.
 
-Theorem aux5 (n: nat):
-  last_value_le even_fibonacci_efficient_increasing (even_fibonacci_efficient (S n)) =
-  S (last_value_le even_fibonacci_efficient_increasing (even_fibonacci_efficient n)).
+Theorem increasing_thm4 (f: sequence Z) (H: increasing f) (n: nat):
+  (n < last_value_le H (f n))%nat.
 Proof.
-Admitted.
-
-Theorem aux6 (n: nat):
-  last_value_le even_fibonacci_efficient_increasing (even_fibonacci_efficient n) = S n.
-Proof.
-  induction n.
-  + compute. auto.
-  + rewrite aux5. congruence.
+  pose proof (last_value_le_thm H (f n) n). assert (f n <= f n) by lia.
+  apply H0 in H1. auto.
 Qed.
 
-Theorem aux7 (n: nat):
+Theorem increasing_thm5 (f: sequence Z) (H: increasing f) (n: nat) (M: Z):
+  (last_value_le H M = S n) <-> (f n <= M < f (S n)).
+Proof.
+  pose proof (last_value_le_thm H). split; intros.
+  + split.
+    - apply H0. lia.
+    - assert (M < f (S n) <-> (f (S n) <= M -> False)) by lia.
+      rewrite H2. rewrite <- H0. lia.
+  + destruct H1. rewrite <- H0 in H1. assert (f (S n) <= M -> False) by lia.
+    rewrite <- H0 in H3. lia.
+Qed.
+
+Theorem increasing_thm6 (f: sequence Z) (H: increasing f) (n: nat):
+  last_value_le H (f n) = S n.
+Proof.
+  rewrite increasing_thm5. pose (H n). lia.
+Qed.
+
+Theorem thm03 (n: nat):
   result_simple (even_fibonacci_efficient (S n)) = result_simple (even_fibonacci_efficient n) + even_fibonacci_efficient (S n).
 Proof.
   repeat rewrite both_results_equal. unfold result_more_efficient.
-  unfold increasing_sequence_with_max_value. rewrite aux5. rewrite seq_S. simpl.
-  rewrite map_app. simpl. rewrite sum_Z_app. simpl. f_equal. rewrite aux6. ring.
+  unfold increasing_sequence_with_max_value. rewrite increasing_thm6. rewrite increasing_thm6.
+  repeat rewrite seq_S. simpl. rewrite map_app. rewrite sum_Z_app. f_equal. simpl. lia.
 Qed.
+
+Theorem even_fibonacci_efficient_unfold (n: nat):
+  even_fibonacci_efficient (S (S n)) = 4 * even_fibonacci_efficient (S n) + even_fibonacci_efficient n.
+Proof.
+  unfold even_fibonacci_efficient. repeat rewrite <- both_formulations_equivalent.
+  rewrite recurrent_sequence_unfold. lia.
+Qed.
+
+Theorem thm04 (n: nat):
+  let P: nat -> Prop := fun n => 4 * even_fibonacci_efficient n <= even_fibonacci_efficient (S n) in
+  P n.
+Proof.
+  intro. assert (P n /\ P (S n)).
+  { unfold P in *. induction n.
+    + compute. split; congruence.
+    + destruct IHn; split; auto. repeat rewrite even_fibonacci_efficient_unfold in *.
+      lia. }
+  apply H.
+Qed.
+
+Theorem thm05 (n: nat):
+  let P: nat -> Prop := fun n => 4 * even_fibonacci_efficient (S n) <= 17 * even_fibonacci_efficient n in
+  P n.
+Proof.
+  intro. assert (P n /\ P (S n)).
+  { unfold P in *. induction n.
+    + compute. split; congruence.
+    + destruct IHn; split; auto. repeat rewrite even_fibonacci_efficient_unfold in *. lia. }
+  apply H.
+Qed.
+
+Theorem thm06 (M: Z) (H: 1 <= M):
+  4 * even_fibonacci_efficient (last_value_le even_fibonacci_efficient_increasing M) <= 17 * M.
+Proof.
+  remember (last_value_le even_fibonacci_efficient_increasing M) as W. destruct W.
+  + change (even_fibonacci_efficient 0) with 2. lia.
+  + symmetry in HeqW. pose proof (increasing_thm5 even_fibonacci_efficient_increasing).
+    pose proof (proj1 (H0 W M) HeqW). destruct H1. pose proof (thm05 W). simpl in H3. lia.
+Qed.
+
+Theorem thm07 (M: Z):
+  M < even_fibonacci_efficient (S (last_value_le even_fibonacci_efficient_increasing M)).
+Proof.
+  remember (last_value_le even_fibonacci_efficient_increasing M) as W. destruct W.
+  + change (even_fibonacci_efficient 1) with 8. symmetry in HeqW. assert (M < 2).
+    { unfold last_value_le in HeqW. rewrite last_value_le_aux_equation in HeqW.
+      destruct Z_lt_le_dec.
+      + change (even_fibonacci_efficient 0) with 2 in l. auto.
+      + destruct Z.eq_dec; try lia. pose proof (last_value_le_aux_thm0 even_fibonacci_efficient_increasing M 1). lia. }
+    lia.
+  + symmetry in HeqW. pose proof (increasing_thm5 even_fibonacci_efficient_increasing W M).
+    pose proof ((proj1 H) HeqW). destruct H0. rewrite even_fibonacci_efficient_unfold.
+    pose proof (even_fibonacci_efficient_greater_than_1 W). lia.
+Qed.
+
+Theorem thm08 (n: nat) (M: Z):
+  let P: nat -> Prop := fun n => even_fibonacci_efficient (S n) <= 4 * M -> even_fibonacci_efficient n <= M in P n.
+Proof.
+  intro. assert (P n /\ P (S n)).
+  { induction n.
+    + unfold P. split.
+      - intros. change (even_fibonacci_efficient 1) with 8 in H.
+        change (even_fibonacci_efficient 0) with 2. lia.
+      - intros. change (even_fibonacci_efficient 2) with 34 in H.
+        change (even_fibonacci_efficient 1) with 8. lia.
+    + destruct IHn; split; auto. unfold P in *. repeat rewrite even_fibonacci_efficient_unfold in *.
+      intros. ring_simplify in H1. pose proof (even_fibonacci_efficient_greater_than_1 n).
+      pose proof (even_fibonacci_efficient_greater_than_1 (S n)). lia. }
+  apply H.
+Qed.
+
+(*Theorem test (n: nat) (M: Z):
+  even_fibonacci_efficient (P (S i)) <= M *)
 
 Require Import EulerProject2.
 Instance CompSpecs : compspecs. make_compspecs prog. Defined.
@@ -568,14 +652,14 @@ Definition Vprog : varspecs. mk_varspecs prog. Defined.
 
 Definition result_spec: ident * funspec :=
 DECLARE _result
-  WITH max: Z
+  WITH M: Z
   PRE [ tuint ]
-    PROP(0 <= max <= 1000000)
-    PARAMS(Vint (Int.repr max))
+    PROP(0 <= M <= 1000000)
+    PARAMS(Vint (Int.repr M))
     SEP()
   POST [ tuint ]
     PROP()
-    RETURN(Vint (Int.repr (result_simple max)))
+    RETURN(Vint (Int.repr (result_simple M)))
     SEP().
 
 Definition main_spec :=
@@ -591,70 +675,67 @@ Definition Gprog := [result_spec; main_spec].
 
 Lemma body_result: semax_body Vprog Gprog f_result result_spec.
 Proof.
+  start_function. do 3 forward.
+  assert (M <= 1 \/ 2 <= M) by lia. destruct H0.
+  + forward_while (EX i: nat,
+      PROP (i = 0%nat)
+      LOCAL (temp _max (Vint (Int.repr M));
+             temp _a (Vint (Int.repr 0));
+             temp _b (Vint (Int.repr 2));
+             temp _sum (Vint (Int.repr 0)))
+      SEP ()).
+    - entailer!. Exists 0%nat. entailer!.
+    - entailer!.
+    - lia.
+    - deadvars!. forward. entailer!. do 2 f_equal. rewrite both_results_equal.
+      unfold result_more_efficient. unfold increasing_sequence_with_max_value.
+      unfold last_value_le in *. rewrite last_value_le_aux_equation.
+      change (even_fibonacci_efficient 0) with 2. destruct Z_lt_le_dec.
+      * simpl. auto.
+      * lia.
+  + forward_while (EX i: nat,
+      PROP ((0 <= i <= last_value_le even_fibonacci_efficient_increasing M)%nat)
+      LOCAL (temp _max (Vint (Int.repr M));
+             temp _a (Vint (Int.repr (match i with O => 0 | S n => even_fibonacci_efficient n end)));
+             temp _b (Vint (Int.repr (even_fibonacci_efficient i)));
+             temp _sum (Vint (Int.repr (result_simple (match i with O => 0 | S n => even_fibonacci_efficient n end)))))
+      SEP ()).
+    - entailer!. Exists 0%nat. entailer!.
+    - entailer!.
+    - do 4 forward. entailer!.
+      * pose proof (even_fibonacci_efficient_greater_than_1 i).
+        rewrite Int.unsigned_repr in HRE. destruct H1. rewrite Int.signed_repr. rep_lia.
+        { apply (increasing_thm2 even_fibonacci_efficient_increasing) in H3.
+          assert (1 <= M) by lia. apply thm06 in H4. rep_lia. }
+        { split; try rep_lia. destruct H1. apply (increasing_thm2 even_fibonacci_efficient_increasing) in H3.
+          assert (1 <= M) by lia. apply thm06 in H4. rep_lia. }
+      * Exists (S i). entailer!. repeat split.
+        ++ rewrite Int.unsigned_repr in HRE. admit.
+           { split.
+             + pose proof (even_fibonacci_efficient_greater_than_1 i). lia.
+             + destruct H1. apply (increasing_thm2 even_fibonacci_efficient_increasing) in H2.
+               assert (1 <= M) by lia. apply thm06 in H3. rep_lia. }
+        ++ destruct i; try reflexivity. rewrite even_fibonacci_efficient_unfold. reflexivity.
+        ++ destruct i; try reflexivity. rewrite thm03. reflexivity.
+    - deadvars!. forward. entailer!. destruct i.
+      * change (Int.unsigned (Int.repr (even_fibonacci_efficient 0))) with 2 in HRE. lia.
+      * rewrite Int.unsigned_repr in HRE. do 2 f_equal. repeat rewrite both_results_equal.
+        destruct H1. clear H1. unfold result_more_efficient. unfold increasing_sequence_with_max_value.
+        do 3 f_equal. rewrite increasing_thm6. symmetry. rewrite increasing_thm5. split; auto.
+        inversion H2.
+        ++ symmetry in H3. rewrite increasing_thm5 in H3. lia.
+        ++ apply Peano.le_n_S in H3. rewrite H1 in H3. clear H1 H2 m.
+           admit.
+        ++ split.
+           -- pose proof (even_fibonacci_efficient_greater_than_1 (S i)). lia.
+           -- destruct H1. apply (increasing_thm2 even_fibonacci_efficient_increasing) in H2.
+              assert (1 <= M) by lia. apply thm06 in H3. rep_lia.
 Admitted.
 
 Lemma body_main: semax_body Vprog Gprog f_main main_spec.
 Proof.
   start_function. forward_call 1000000.
   + lia.
-  + forward. 
-
-assert (result_simple 1000000 = 1089154). { admit. }
-    rewrite H. clear H. forward. hint. 
-
- forward.
-rewrite both_results_equal. forward.
-hint.
- forward.
-
-(*
-  rewrite H. start_function. do 3 forward.
-  forward_while (EX i: nat,
-    PROP (0 <= even_fibonacci_efficient i <= 5000000)
-    LOCAL (temp _a (Vint (Int.repr (match i with O => 0 | S n => even_fibonacci_efficient n end)));
-           temp _b (Vint (Int.repr (even_fibonacci_efficient i)));
-           temp _result (Vint (Int.repr (result_simple (match i with O => 0 | S n => even_fibonacci_efficient n end)))))
-    SEP (TT)).
-  + entailer!. Exists 0%nat. entailer!. change (even_fibonacci_efficient 0) with 2. lia.
-  + entailer!.
-  + do 4 forward. destruct i.
-    - entailer!. Exists 1%nat. entailer!.
-    - entailer!. Exists (S (S i)). entailer!. repeat split.
-      * pose proof (even_fibonacci_efficient_greater_than_1 (S (S i))). lia.
-      * pose proof (even_fibonacci_efficient_increasing i). unfold even_fibonacci_efficient in *.
-        repeat rewrite <- both_formulations_equivalent in *. rewrite recurrent_sequence_unfold. lia.
-      * f_equal. f_equal. unfold even_fibonacci_efficient. repeat rewrite <- both_formulations_equivalent.
-        rewrite recurrent_sequence_unfold. ring.
-      * f_equal. f_equal. apply aux7.
-  + assert (i = 10)%nat.
-    { destruct i. change (even_fibonacci_efficient 0) with 2 in *. lia.
-      destruct i. change (even_fibonacci_efficient 1) with 8 in *. lia.
-      destruct i. change (even_fibonacci_efficient 2) with 34 in *. lia.
-      destruct i. change (even_fibonacci_efficient 3) with 144 in *. lia.
-      destruct i. change (even_fibonacci_efficient 4) with 610 in *. lia.
-      destruct i. change (even_fibonacci_efficient 5) with 2584 in *. lia.
-      destruct i. change (even_fibonacci_efficient 6) with 10946 in *. lia.
-      destruct i. change (even_fibonacci_efficient 7) with 46368 in *. lia.
-      destruct i. change (even_fibonacci_efficient 8) with 196418 in *. lia.
-      destruct i. change (even_fibonacci_efficient 9) with 832040 in *. lia.
-      destruct i. change (even_fibonacci_efficient 10) with 3524578 in *. lia.
-      pose proof (@increasing_thm2 _ even_fibonacci_efficient_increasing 11 (i + 11)).
-      assert (11 <= i + 11)%nat by lia. apply H0 in H1.
-      change (even_fibonacci_efficient 11) with 14930352 in *.
-      replace (i + 11)%nat with (S(S(S(S(S(S(S(S(S(S(S(i)))))))))))) in H1 by lia.
-      lia. }
-    subst. unfold abbreviate in MORE_COMMANDS. unfold abbreviate in POSTCONDITION.
-    assert (result_simple 1000000 = result_simple (even_fibonacci_efficient 9)).
-    { admit. }
-    setoid_rewrite H0 in POSTCONDITION.
-    assert (result_simple (even_fibonacci_efficient 9) =
-                   even_fibonacci_efficient 0 + even_fibonacci_efficient 1 + even_fibonacci_efficient 2 +
-                   even_fibonacci_efficient 3 + even_fibonacci_efficient 4 + even_fibonacci_efficient 5 +
-                   even_fibonacci_efficient 6 + even_fibonacci_efficient 7 + even_fibonacci_efficient 8 +
-                   even_fibonacci_efficient 9).
-    { rewrite aux7. rewrite aux7. (* <-- here Coq hungs up and don't go forward for long time. *)
-      rewrite aux7. (* <-- here too *) rewrite aux7. (* <-- and here too *) rewrite aux7. rewrite aux7.
-      rewrite aux7. rewrite aux7. rewrite aux7. simpl. reflexivity. }
-    rewrite H0. forward.
+  + remember (result_simple 1000000) as W. clear HeqW. forward.
 Qed.
-*)
+
