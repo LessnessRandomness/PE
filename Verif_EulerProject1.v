@@ -269,6 +269,5 @@ Qed.
 Lemma body_main: semax_body Vprog Gprog f_main main_spec.
 Proof.
   start_function. forward_call 999.
-  + lia.
-  + remember (result 999) as W. clear HeqW. time forward.
+  remember (result 999) as W. clear HeqW. time forward.
 Qed.
