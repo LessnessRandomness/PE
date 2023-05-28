@@ -1,7 +1,7 @@
 Require Import VST.floyd.proofauto.
 Require Import EulerProject1.
-Instance CompSpecs : compspecs. make_compspecs prog. Defined.
-Definition Vprog : varspecs.  mk_varspecs prog. Defined.
+Instance CompSpecs: compspecs. make_compspecs prog. Defined.
+Definition Vprog: varspecs. mk_varspecs prog. Defined.
 
 Definition nat_divide_dec a b: { Nat.divide a b } + { ~ Nat.divide a b }.
 Proof.
@@ -19,7 +19,7 @@ Definition criterion (n: Z): bool :=
 Definition sum_Z: list Z -> Z := fold_right Z.add 0.
 
 Lemma sum_Z_app:
-  forall a b, sum_Z (a++b) = sum_Z a + sum_Z b.
+  forall a b, sum_Z (a ++ b) = sum_Z a + sum_Z b.
 Proof.
   intros. induction a; simpl; lia.
 Qed.
@@ -128,27 +128,25 @@ Proof.
   + intros. unfold result, faster_result in *.
     replace (seq_Z (Z.succ x)) with (seq_Z x ++ Z.succ x :: nil).
     rewrite filter_app, sum_Z_app. rewrite H0. clear H0.
-    unfold criterion. simpl. destruct (Zdivide_dec 3 (Z.succ x)).
-    - simpl. replace (Z.succ x + 0) with (Z.succ x) by ring.
-      rewrite thm_4; try lia; auto.
+    unfold criterion. simpl (filter _ _).
+    destruct (Zdivide_dec 3 (Z.succ x)); simpl (sum_Z _).
+    - rewrite thm_4; try lia; auto.
       destruct (Zdivide_dec 5 (Z.succ x)).
       * assert (15 | Z.succ x).
         { assert (Z.lcm 3 5 = 15) by reflexivity. rewrite <- H0. apply Z.lcm_least; auto. }
         rewrite thm_4; try lia; auto.
         rewrite thm_4; try lia; auto.
-      * rewrite thm_5; try lia; auto.
-        assert (~ (15 | Z.succ x)).
+      * assert (~ (15 | Z.succ x)).
         { intro. apply n. clear n. destruct H0. exists (3 * x0). lia. }
         rewrite thm_5; try lia; auto.
-     - rewrite thm_5; try lia; auto. destruct Zdivide_dec.
+        rewrite thm_5; try lia; auto.
+     - rewrite thm_5; try lia; auto.
+       assert (~ (15 | Z.succ x)).
+       { intro. apply n. clear n. destruct H0. exists (5 * x0). lia. }
+       rewrite (thm_5 15); try lia; auto.
+       destruct Zdivide_dec; simpl (sum_Z _).
        * rewrite thm_4; try lia; auto.
-         assert (~ (15 | Z.succ x)).
-         { intro. apply n. clear n. destruct H0. exists (5 * x0). lia. }
-         rewrite thm_5; try lia; auto. simpl. lia.
-       * assert (~ (15 | Z.succ x)).
-         { intro. apply n. destruct H0. exists (x0 * 5). lia. }
-         rewrite thm_5; try lia; auto.
-         rewrite thm_5; try lia; auto. simpl. lia.
+       * rewrite thm_5; try lia; auto.
     - unfold seq_Z. rewrite Z2Nat.inj_succ; auto. rewrite seq_S.
       simpl. rewrite map_app. f_equal. simpl. f_equal. lia.
 Qed.
@@ -206,64 +204,25 @@ Lemma body_solution: semax_body Vprog Gprog f_solution solution_spec.
 Proof.
   start_function.
   forward_call (number / 3).
-  + entailer!. simpl. unfold Int.divu.
-    rewrite Int.unsigned_repr. rewrite Int.unsigned_repr. reflexivity.
-    { rep_lia. }
-    { rep_lia. }
   + split.
-    - apply Z.div_pos. lia. lia.
+    - apply Z.div_pos; lia.
     - assert (number / 3 <= 333).
-      change 333 with (1000/3). apply Z.div_le_mono. lia. lia. lia.
+      { change 333 with (1000 / 3). apply Z.div_le_mono; lia. }
+      lia.
   + forward_call (number / 5).
-    - entailer!. simpl. unfold Int.divu.
-      rewrite Int.unsigned_repr. rewrite Int.unsigned_repr. reflexivity.
-      { rep_lia. }
-      { rep_lia. }
     - split.
-      * apply Z.div_pos. lia. lia.
+      * apply Z.div_pos; lia.
       * assert (number / 5 <= 200).
-        change 200 with (1000/5). apply Z.div_le_mono. lia. lia. lia.
+        { change 200 with (1000 / 5). apply Z.div_le_mono; lia. }
+        lia.
     - forward_call (number / 15).
-      ++ entailer!. simpl. unfold Int.divu.
-         repeat rewrite Int.unsigned_repr. reflexivity.
-         { rep_lia. }
-         { rep_lia. }
       ++ split.
-         -- apply Z.div_pos. lia. lia.
+         -- apply Z.div_pos; lia.
          -- assert (number / 15 <= 66).
-            change 66 with (1000/15). apply Z.div_le_mono. lia. lia. lia.
+            { change 66 with (1000 / 15). apply Z.div_le_mono; lia. }
+            lia.
       ++ deadvars!. time forward.
-         -- entailer!.
-            assert (0 <= number / 15 <= 66).
-            { split.
-              + apply Z.div_pos. lia. lia.
-              + change 66 with (1000 / 15). apply Z.div_le_mono. lia. lia. }
-            assert (0 <= number / 15 * (number / 15 + 1) <= 4422) by nia.
-            assert (0 <= number / 15 * (number / 15 + 1) / 2 <= 2211).
-            { split.
-              + apply Z.div_pos. lia. lia.
-              + change 2211 with (4422 / 2). apply Z.div_le_mono. lia. lia. }
-            assert (0 <= number / 3 <= 333).
-            { split.
-              + apply Z.div_pos. lia. lia.
-              + change 333 with (1000 / 3). apply Z.div_le_mono. lia. lia. }
-            assert (0 <= number / 3 * (number / 3 + 1) <= 111222) by nia.
-            assert (0 <= number / 3 * (number / 3 + 1) / 2 <= 55611).
-            { split.
-              + apply Z.div_pos. lia. lia.
-              + change 55611 with (111222 / 2). apply Z.div_le_mono. lia. lia. }
-            assert (0 <= number / 5 <= 200).
-            { split.
-              + apply Z.div_pos. lia. lia.
-              + change 200 with (1000 / 5). apply Z.div_le_mono. lia. lia. }
-            assert (0 <= number / 5 * (number / 5 + 1) <= 40200) by nia.
-            assert (0 <= number / 5 * (number / 5 + 1) / 2 <= 20100).
-            { split.
-              + apply Z.div_pos. lia. lia.
-              + change 20100 with (40200 / 2). apply Z.div_le_mono. lia. lia. }
-            unfold aux. repeat rewrite Int.signed_repr; try rep_lia.
-         -- entailer!. rewrite both_results_equal; try lia.
-            unfold faster_result. reflexivity.
+         -- entailer!. rewrite both_results_equal; try lia. auto.
 Qed.
 
 Lemma body_main: semax_body Vprog Gprog f_main main_spec.
