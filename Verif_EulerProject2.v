@@ -702,12 +702,6 @@ Proof.
     - entailer!. Exists 0%nat. entailer!.
     - entailer!.
     - do 4 forward. entailer!.
-      * pose proof (even_fibonacci_efficient_greater_than_1 i).
-        rewrite Int.unsigned_repr in HRE. destruct H1. rewrite Int.signed_repr. rep_lia.
-        { apply (increasing_thm2 even_fibonacci_efficient_increasing) in H3.
-          assert (1 <= M) by lia. apply thm06 in H4. rep_lia. }
-        { split; try rep_lia. destruct H1. apply (increasing_thm2 even_fibonacci_efficient_increasing) in H3.
-          assert (1 <= M) by lia. apply thm06 in H4. rep_lia. }
       * Exists (S i). entailer!. repeat split.
         ++ rewrite Int.unsigned_repr in HRE. clear H1. assert (even_fibonacci_efficient i <= M) by lia. clear HRE.
            rewrite <- (last_value_le_thm even_fibonacci_efficient_increasing) in H1. auto.
