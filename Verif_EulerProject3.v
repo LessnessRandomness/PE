@@ -194,7 +194,17 @@ Proof.
         LOCAL (temp _n (Vlong (Int64.repr n)); temp _f (Vlong (Int64.repr f)))
         SEP (data_at Ews tulong (Vlong (Int64.repr (if Z.eq_dec i 0 then h else new_highest f n h))) (gv _highest))
     ).
-
+    - Exists 0. rewrite if_true by auto. entailer!. split.
+      * split; try lia. admit.
+      * exists n. simpl. lia.
+    - if_tac.
+      * entailer. entailer!. apply repr_inj_unsigned64 in H2; try lia.
+      * entailer!. apply repr_inj_unsigned64 in H7; try lia.
+    - if_tac.
+      * forward.
+        ++ entailer!. apply repr_inj_unsigned64 in H4; try lia.
+        ++ subst. clear H3 H2. Fail forward.
+Admitted.
 
 
 
