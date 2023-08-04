@@ -3,11 +3,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
-int64_t highest;
+uint64_t highest;
 
 // checks if `f` is a factor of `n`,
 // returning divided `n` accordingly
-int64_t factorize(int64_t n, int64_t f) {
+uint64_t factorize(uint64_t n, uint64_t f) {
     if (n < f) return n;
     while (n % f == 0) {
         n /= f;
@@ -18,7 +18,7 @@ int64_t factorize(int64_t n, int64_t f) {
     return n;
 }
 
-int64_t find(int64_t n) {
+uint64_t find(uint64_t n) {
     highest = 1;
 
     // check the two simplest cases
@@ -27,7 +27,7 @@ int64_t find(int64_t n) {
 
     // and then all numbers in the form 6x - 1 and 6x + 1
     if (n >= 5) {
-        for (int64_t i = 5; i * i <= n; i += 6) {
+        for (uint64_t i = 5; i * i <= n; i += 6) {
             n = factorize(n, i);
             n = factorize(n, i + 2);
         }

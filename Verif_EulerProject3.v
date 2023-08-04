@@ -1,6 +1,5 @@
 Require Import VST.floyd.proofauto.
-Require Import FunInd.
-Require Import Znumtheory.
+Require Import Znumtheory FunInd.
 
 Open Scope Z.
 
@@ -120,4 +119,88 @@ Proof.
     assert (0 <= x1 < x1 * x0) by nia.
     apply (H x1); auto.
 Qed.
+
+
+
+Definition is_biggest_prime_divisor (k n: Z) := 
+  let P := fun x => Z.divide x n /\ prime x in
+  P k /\ (forall i, P i -> i <= k).
+
+Theorem aux f (Hf: 2 <= f) n (Hn: 1 <= n):
+  Z.divide f n -> 1 <= n / f.
+Proof.
+  intros [x Hx]. subst. replace (x * f / f) with x. nia.
+  symmetry. apply Z_div_mult. lia.
+Qed.
+
+Function repeated_div' f (Hf: 2 <= f) n (Hn: 1 <= n) { measure Z.to_nat n }: Z * Z :=
+  match Zdivide_dec f n with
+  | left H => let (i, k) := repeated_div' f Hf (n / f) (aux f Hf n Hn H) in (i + 1, k)
+  | right _ => (0, n)
+  end.
+Proof.
+  intros. destruct H. subst. rewrite Z_div_mult; try nia.
+Defined.
+
+Definition repeated_div f n :=
+  match Z_le_dec 2 f with
+  | left H1 => match Z_le_dec 1 n with
+               | left H2 => repeated_div' f H1 n H2
+               | _ => (0, n)
+               end
+  | _ => (0, n)
+  end.
+
+Theorem repeated_div_thm f n (H: 2 <= f) (H': 1 <= n): n = f ^ fst (repeated_div f n) * snd (repeated_div f n).
+Proof.
+Admitted.
+
+
+Require Import EulerProject3.
+Instance CompSpecs : compspecs. make_compspecs prog. Defined.
+Definition Vprog : varspecs. mk_varspecs prog. Defined.
+
+Definition new_highest f n h :=
+  if Zdivide_dec f n then (if Z_le_dec f h then h else f) else h.
+
+Definition factorize_spec: ident * funspec :=
+DECLARE _factorize
+  WITH gv: globals, n: Z, f: Z, h: Z
+  PRE [ tulong, tulong ]
+    PROP (2 <= n <= Int64.max_signed; 2 <= f <= Int64.max_unsigned)
+    PARAMS (Vlong (Int64.repr n); Vlong (Int64.repr f))
+    SEP (data_at Ews tulong (Vlong (Int64.repr h)) (gv _highest))
+  POST [ tulong ]
+    PROP ()
+    RETURN (Vlong (Int64.repr (snd (repeated_div f n))))
+    SEP (data_at Ews tulong (Vlong (Int64.repr (new_highest f n h))) (gv _highest)).
+
+
+Definition Gprog := [factorize_spec].
+
+Lemma factorize_result: semax_body Vprog Gprog f_factorize factorize_spec.
+Proof.
+  start_function. forward_if.
+  + deadvars!. forward. clear Delta. entailer!. destruct (Zdivide_dec f n); auto.
+    - exfalso. destruct d. subst. assert (x < 1) by nia. lia.
+    - f_equal. f_equal. unfold repeated_div. destruct Z_le_dec; try lia. destruct Z_le_dec; try lia.
+        rewrite repeated_div'_equation. destruct Zdivide_dec; auto. tauto.
+    - unfold new_highest. destruct Zdivide_dec.
+      * destruct d. subst. assert ((x - 1) * f < 0) by lia. assert (x < 1) by nia. lia.
+      * auto.
+  + forward_while (
+      EX (i: Z),
+        PROP (0 <= i <= fst (repeated_div f n); Z.divide (Z.pow f i) n)
+        LOCAL (temp _n (Vlong (Int64.repr n)); temp _f (Vlong (Int64.repr f)))
+        SEP (data_at Ews tulong (Vlong (Int64.repr (if Z.eq_dec i 0 then h else new_highest f n h))) (gv _highest))
+    ).
+
+
+
+
+
+
+
+
+
 
