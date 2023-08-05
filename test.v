@@ -112,7 +112,9 @@ Definition f_main := {|
   fn_temps := nil;
   fn_body :=
 (Ssequence
-  (Sreturn (Some (Econst_int (Int.repr 0) tint)))
+  (Ssequence
+    (Sassign (Evar _COUNTER tint) (Econst_int (Int.repr 1) tint))
+    (Sreturn (Some (Econst_int (Int.repr 0) tint))))
   (Sreturn (Some (Econst_int (Int.repr 0) tint))))
 |}.
 
