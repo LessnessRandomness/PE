@@ -85,33 +85,3 @@ Proof.
   repeat forward.
 Qed.
 End old_version.
-
-(* Experiments
-
-Lemma get_counter_proof: semax_body Vprog Gprog f_get_counter get_counter_spec.
-Proof.
-  (* start_function1.
-  start_function2. *)
-  start_function.
-  (* rewrite (_ : @nil localdef = [gvars gv]). admit. *)
-  repeat forward.
-  entailer.
-  all: fail.
-Admitted.
-
-
-Eval cbv in prog_vars prog.
-(* Locate "WITH". *)
-Locate "PRE".
-Locate "LOCAL".
-Locate "SEP".
-Locate "PROP".
-Locate "DECLARE".
-Locate "PARAMS".
-(* PROPx
-NDmk_funspec
-PARAMSx
-SEPx
-LOCALx *)
-
-*)
