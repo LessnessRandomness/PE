@@ -9,7 +9,9 @@ Definition get_counter_spec: ident * funspec :=
 DECLARE _get_counter
   WITH gv: globals, c: Z
   PRE []
-    PROP ()
+    PROP (Int.min_signed <= c /\ c + 1 <= Int.max_signed)
+    (* NOT enough: try it!
+    PROP (Int.min_signed <= c + 1 <= Int.max_signed) *)
     PARAMS ()
     GLOBALS (gv)
     SEP (data_at Ews tint (Vint (Int.repr c)) (gv _COUNTER))
@@ -24,9 +26,5 @@ Definition Gprog := [get_counter_spec].
 Lemma get_counter_proof: semax_body Vprog Gprog f_get_counter get_counter_spec.
 Proof.
   start_function.
-  forward.
-  forward.
-  entailer!. { admit. }
-  forward.
-  forward.
-Admitted.
+  repeat forward.
+Qed.
