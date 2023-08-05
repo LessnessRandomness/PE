@@ -1,8 +1,8 @@
 Require Import VST.floyd.proofauto.
+Require Import test.
 Open Scope Z.
 
-Require Import test.
-Instance CompSpecs : compspecs. make_compspecs prog. Defined.
+#[export] Instance CompSpecs : compspecs. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
 
 Definition get_counter_spec: ident * funspec :=

@@ -9,5 +9,5 @@ int get_counter(void) {
 }
 
 int main(void) {
-	return 0;
+    return 0;
 }
