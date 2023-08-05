@@ -11,6 +11,7 @@ DECLARE _get_counter
   PRE []
     PROP ()
     PARAMS ()
+    GLOBALS (gv)
     SEP (data_at Ews tint (Vint (Int.repr c)) (gv _COUNTER))
   POST [ tint ]
     PROP ()
@@ -22,5 +23,10 @@ Definition Gprog := [get_counter_spec].
 
 Lemma get_counter_proof: semax_body Vprog Gprog f_get_counter get_counter_spec.
 Proof.
-  start_function. Fail forward.
+  start_function.
+  forward.
+  forward.
+  entailer!. { admit. }
+  forward.
+  forward.
 Admitted.
