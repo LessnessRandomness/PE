@@ -151,24 +151,98 @@ Definition repeated_div f n :=
   | _ => (0, n)
   end.
 
+Theorem repeated_div'_aux f n1 n2 (Hf1 Hf2: 2 <= f) (Hn1: 1 <= n1) (Hn2: 1 <= n2) (H: n1 = n2):
+  repeated_div' f Hf1 n1 Hn1 = repeated_div' f Hf2 n2 Hn2.
+Proof.
+  subst. assert (0 <= n2) by lia. revert Hn1 Hn2. pattern n2. apply Z_lt_induction; auto. clear H. intros.
+  rewrite repeated_div'_equation at 1. rewrite repeated_div'_equation at 1.
+  destruct Zdivide_dec; auto. destruct d; subst.
+  assert (0 <= x0 < x0 * f). { split; try lia. nia. }
+  pose (H _ H0). remember (repeated_div' f Hf1 (x0 * f / f) _) as W1.
+  remember (repeated_div' f Hf2 (x0 * f / f) _) as W2. destruct W1, W2.
+  assert (repeated_div' f Hf1 (x0 * f / f) (aux f Hf1 (x0 * f) Hn1 (ex_intro (fun z : Z => x0 * f = z * f) x0 eq_refl)) =
+          repeated_div' f Hf2 (x0 * f / f) (aux f Hf2 (x0 * f) Hn2 (ex_intro (fun z : Z => x0 * f = z * f) x0 eq_refl))).
+  { apply H. rewrite Z_div_mult; try lia. }
+  congruence.
+Qed.
+
+Theorem Zle_0_repeated_div' f n (Hf: 2 <= f) (Hn: 1 <= n): 0 <= fst (repeated_div' f Hf n Hn).
+Proof.
+  assert (0 <= n) by lia. revert Hn. pattern n. apply Z_lt_induction; auto. clear H.
+  intros. rewrite repeated_div'_equation. destruct Zdivide_dec; try (simpl; lia).
+  remember (repeated_div' f Hf (x / f) (aux f Hf x Hn d)) as W. destruct W. simpl.
+  assert (0 <= x / f < x). { split. apply Z_div_nonneg_nonneg; lia. apply Z.div_lt; lia. }
+  assert (1 <= x / f). { destruct d. subst. rewrite Z_div_mult; nia. }
+  assert (repeated_div' f Hf (x / f) (aux f Hf x Hn d) = repeated_div' f Hf (x / f) H1).
+  { apply repeated_div'_aux; auto. }
+  pose proof (H _ H0 H1). do 2 destruct repeated_div'. inversion HeqW; inversion H2; subst. simpl in *. lia.
+Qed.
+
+Theorem Zle_1_repeated_div' f n (Hf: 2 <= f) (Hn: 1 <= n) (H: Z.divide f n): 1 <= fst (repeated_div' f Hf n Hn).
+Proof.
+  rewrite repeated_div'_equation. destruct Zdivide_dec; try tauto.
+  pose proof (Zle_0_repeated_div' f (n / f)).
+  assert (1 <= n / f). { destruct H. subst. rewrite Z_div_mult; nia. }
+  assert (repeated_div' f Hf (n / f) H1 = repeated_div' f Hf (n / f) (aux f Hf n Hn d)).
+  { apply repeated_div'_aux; auto. }
+  rewrite <- H2. pose proof (Zle_0_repeated_div' f (n / f) Hf H1). destruct repeated_div'. simpl in *. lia.
+Qed.
+
 Theorem repeated_div_thm f n (H: 2 <= f) (H': 1 <= n): n = f ^ fst (repeated_div f n) * snd (repeated_div f n).
 Proof.
-Admitted.
+  unfold repeated_div. repeat destruct Z_le_dec. clear H H'. assert (0 <= n) by lia. revert l0.
+  pattern n. apply Z_lt_induction; auto. clear H. intros.
+  rewrite repeated_div'_equation. destruct Zdivide_dec.
+  + destruct d. subst. assert (0 <= x0 < x0 * f). { split. lia. nia. }
+    assert (1 <= x0) by nia. pose proof (H _ H0 H1). rewrite H2 at 1.
+    assert (f ^ fst (repeated_div' f l x0 H1) * snd (repeated_div' f l x0 H1) * f =
+            f ^ (fst (repeated_div' f l x0 H1) + 1) * snd (repeated_div' f l x0 H1)).
+    { rewrite Zmult_comm. rewrite Zmult_assoc. rewrite (Zmult_comm f).
+      assert (f ^ fst (repeated_div' f l x0 H1) * f = f ^ fst (repeated_div' f l x0 H1) * f ^ 1).
+      { f_equal. lia. }
+      rewrite H3. rewrite <- Z.pow_add_r; try lia. apply Zle_0_repeated_div'. }
+    rewrite H3. clear H3.
+    assert (repeated_div' f l (x0 * f / f) (aux f l (x0 * f) l0 (ex_intro (fun z : Z => x0 * f = z * f) x0 eq_refl)) =
+            repeated_div' f l x0 H1).
+    { apply repeated_div'_aux. rewrite Z_div_mult; lia. }
+    rewrite H3. clear H3. destruct (repeated_div' f l x0 H1). simpl. auto.
+  + simpl. lia.
+  + simpl. lia.
+  + simpl. lia.
+Qed.
+
+Theorem repeated_div_thm2 f n (H: 2 <= f) (H': 1 <= n): Z.divide f (snd (repeated_div f n)) -> False.
+Proof.
+  intros. unfold repeated_div in *. repeat destruct Z_le_dec; try lia. clear H H'.
+  assert (0 <= n) by lia. revert l0 H0. pattern n. apply Z_lt_induction; auto. clear H. intros.
+  destruct H0. rewrite repeated_div'_equation in H0. destruct Zdivide_dec in *.
+  + destruct d. subst. assert (0 <= x1 * f / f < x1 * f). { rewrite Z_div_mult; nia. }
+    assert (1 <= x1 * f / f). { rewrite Z_div_mult; nia. }
+    pose (H _ H1 H2). apply f0. clear f0. exists x0. remember (repeated_div' _ l _ _) as W in H0.
+    destruct W. simpl in H0. subst.
+    assert (repeated_div' f l (x1 * f / f) (aux f l (x1 * f) l0 (ex_intro (fun z : Z => x1 * f = z * f) x1 eq_refl)) =
+            repeated_div' f l (x1 * f / f) H2) by (apply repeated_div'_aux; lia).
+    rewrite <- HeqW in H0. rewrite <- H0. auto.
+  + simpl in H0. apply n0. subst. exists x0. auto.
+Qed.
 
 
 Require Import EulerProject3.
-Instance CompSpecs : compspecs. make_compspecs prog. Defined.
+
+#[export] Instance CompSpecs : compspecs. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
 
 Definition new_highest f n h :=
   if Zdivide_dec f n then (if Z_le_dec f h then h else f) else h.
 
+
 Definition factorize_spec: ident * funspec :=
 DECLARE _factorize
   WITH gv: globals, n: Z, f: Z, h: Z
   PRE [ tulong, tulong ]
-    PROP (2 <= n <= Int64.max_signed; 2 <= f <= Int64.max_unsigned)
+    PROP (2 <= n <= Int64.max_unsigned; 2 <= f <= Int64.max_unsigned; 0 <= h <= Int64.max_unsigned)
     PARAMS (Vlong (Int64.repr n); Vlong (Int64.repr f))
+    GLOBALS (gv)
     SEP (data_at Ews tulong (Vlong (Int64.repr h)) (gv _highest))
   POST [ tulong ]
     PROP ()
@@ -178,39 +252,117 @@ DECLARE _factorize
 
 Definition Gprog := [factorize_spec].
 
-Lemma factorize_result: semax_body Vprog Gprog f_factorize factorize_spec.
+Lemma factorize_proof: semax_body Vprog Gprog f_factorize factorize_spec.
 Proof.
-  start_function. forward_if.
-  + deadvars!. forward. clear Delta. entailer!. destruct (Zdivide_dec f n); auto.
+  start_function. assert (Int64.unsigned (Int64.repr f) = f).
+  { rewrite Int64.unsigned_repr_eq. apply Zmod_small. unfold Int64.max_unsigned in H0. lia. }
+  assert (Int64.unsigned (Int64.repr n) = n).
+  { rewrite Int64.unsigned_repr_eq. apply Zmod_small. unfold Int64.max_unsigned in H. lia. }
+  assert (Int64.unsigned (Int64.repr h) = h).
+  { rewrite Int64.unsigned_repr_eq. apply Zmod_small. unfold Int64.max_unsigned in H1. lia. }
+  assert (forall i, 0 <= i -> Int64.unsigned (Int64.repr (n / f ^ i)) = n / f ^ i).
+  { intros. rewrite Int64.unsigned_repr_eq. apply Zmod_small. split.
+    + apply Z_div_nonneg_nonneg; try lia.
+    + destruct (Z.eq_dec i 0).
+      - subst. simpl (f ^ 0). rewrite Zdiv_1_r. unfold Int64.max_unsigned in H. lia.
+      - assert (n / f ^ i < n). { apply Z.div_lt; try lia. apply Z.pow_gt_1; try lia. }
+        unfold Int64.max_unsigned in H. lia. }
+  forward_if.
+  + deadvars!. forward. entailer!. destruct (Zdivide_dec f n); auto.
     - exfalso. destruct d. subst. assert (x < 1) by nia. lia.
     - f_equal. f_equal. unfold repeated_div. destruct Z_le_dec; try lia. destruct Z_le_dec; try lia.
-        rewrite repeated_div'_equation. destruct Zdivide_dec; auto. tauto.
+      rewrite repeated_div'_equation. destruct Zdivide_dec; auto. tauto.
     - unfold new_highest. destruct Zdivide_dec.
       * destruct d. subst. assert ((x - 1) * f < 0) by lia. assert (x < 1) by nia. lia.
       * auto.
   + forward_while (
       EX (i: Z),
-        PROP (0 <= i <= fst (repeated_div f n); Z.divide (Z.pow f i) n)
-        LOCAL (temp _n (Vlong (Int64.repr n)); temp _f (Vlong (Int64.repr f)))
+        PROP (0 <= i <= fst (repeated_div f n))
+        LOCAL (temp _n (Vlong (Int64.repr (n / f ^ i))); temp _f (Vlong (Int64.repr f)); gvars gv)
         SEP (data_at Ews tulong (Vlong (Int64.repr (if Z.eq_dec i 0 then h else new_highest f n h))) (gv _highest))
     ).
-    - Exists 0. rewrite if_true by auto. entailer!. split.
-      * split; try lia. admit.
-      * exists n. simpl. lia.
-    - if_tac.
-      * entailer. entailer!. apply repr_inj_unsigned64 in H2; try lia.
-      * entailer!. apply repr_inj_unsigned64 in H7; try lia.
-    - if_tac.
-      * forward.
-        ++ entailer!. apply repr_inj_unsigned64 in H4; try lia.
-        ++ subst. clear H3 H2. Fail forward.
-Admitted.
-
-
-
-
-
-
-
-
+    - Exists 0. entailer!. repeat split; try lia.
+      * unfold repeated_div. repeat destruct Z_le_dec; try lia. apply Zle_0_repeated_div'.
+      * simpl (f ^ 0). rewrite Z.div_1_r. auto.
+    - entailer!. apply repr_inj_unsigned64 in H10; try lia.
+    - forward.
+      * entailer!. apply repr_inj_unsigned64 in H10; try lia.
+      * assert (f | n / f ^ i).
+        { unfold Int64.modu in HRE. fold (Z.div n (f ^ i)) in HRE. rewrite H5, H2 in HRE; try lia.
+          apply repr_inj_unsigned64 in HRE; try lia.
+          + apply Zmod_divide in HRE; try lia. auto.
+          + assert (0 <= (n / f ^ i) mod f < f). { apply Z_mod_lt. lia. } lia. }
+        clear HRE. forward. forward_if.
+        ++ apply ltu_inv64 in H9. rewrite H2 in H9. destruct Z.eq_dec.
+           -- rewrite H4 in H9. forward. entailer!. Exists 1. simpl (f ^ 0) in H8. rewrite Z.div_1_r in H8.
+              entailer!.
+              ** repeat split; try lia.
+                 +++ unfold repeated_div. repeat destruct Z_le_dec; try lia. apply Zle_1_repeated_div'. auto.
+                 +++ do 2 f_equal. replace (f ^ 1) with f by lia. simpl (f ^ 0). rewrite Z.div_1_r. auto.
+                     unfold Int64.divu. f_equal. congruence.
+              ** destruct Z.eq_dec; try lia. unfold new_highest. repeat if_tac; try lia; auto. tauto.
+           -- unfold new_highest in *. destruct Zdivide_dec; [destruct Z_le_dec |].
+              ** rewrite H4 in H9. lia.
+              ** rewrite H2 in H9. lia.
+              ** elim n1. clear n1. destruct H8. exists (x * f ^ i). rewrite (repeated_div_thm f n) in H8; try lia.
+                 rewrite (repeated_div_thm f n); try lia. rewrite Z.mul_comm in H8.
+                 rewrite Z.divide_div_mul_exact in H8; try lia.
+                 +++ rewrite <- Z.pow_sub_r in H8; try lia. replace (x * f ^ i * f) with (x * f * f ^ i) by ring.
+                     rewrite <- H8. rewrite <- Z.mul_assoc. rewrite <- Z.pow_add_r; try lia.
+                     ring_simplify (fst (repeated_div f n) - i + i). ring.
+                 +++ exists (f ^ (fst (repeated_div f n) - i)). rewrite <- Z.pow_add_r; try lia.
+                     ring_simplify (fst (repeated_div f n) - i + i). auto.
+        ++ apply ltu_false_inv64 in H9. rewrite H2 in H9. destruct Z.eq_dec.
+           -- rewrite H4 in H9. forward. entailer!. simpl (f ^ 0) in H8. rewrite Z.div_1_r in H8.
+              Exists 1. entailer!.
+              ** repeat split; try lia.
+                 +++ unfold repeated_div. repeat destruct Z_le_dec; try lia. apply Zle_1_repeated_div'. auto.
+                 +++ do 2 f_equal. replace (f ^ 1) with f by lia. simpl (f ^ 0). rewrite Z.div_1_r. auto.
+                     unfold Int64.divu. f_equal. congruence.
+              ** destruct Z.eq_dec; try lia. unfold new_highest. destruct Zdivide_dec; try tauto.
+                 destruct Z_le_dec; try lia. auto.
+           -- forward. entailer!. Exists (i + 1). entailer!. repeat split; try lia.
+              ** rewrite (repeated_div_thm f n) in H8; try lia. rewrite Z.mul_comm in H8.
+                 rewrite Zdivide_Zdiv_eq_2 in H8; try lia.
+                 +++ rewrite <- Z.pow_sub_r in H8; try lia.
+                     assert ((f | snd (repeated_div f n)) -> False). { apply repeated_div_thm2; try lia. }
+                     assert (f | f ^ (fst (repeated_div f n) - i)).
+                     { exists (f ^ (fst (repeated_div f n) - i - 1)). replace f with (f ^ 1) at 5 by lia.
+                       rewrite <- Z.pow_add_r; try lia. f_equal. ring.
+                       destruct (Z_le_lt_dec 0 (fst (repeated_div f n) - i - 1)); auto.
+                       exfalso. assert (i = fst (repeated_div f n)) by lia. subst.
+                       ring_simplify (fst (repeated_div f n) - fst (repeated_div f n)) in H8.
+                       simpl (f ^ 0) in H8. ring_simplify (snd (repeated_div f n) * 1) in H8. auto. }
+                     remember (fst (repeated_div f n) - i) as W. assert (0 < W).
+                     { assert (W = 0 \/ 0 < W) by lia. destruct H14; auto. rewrite H14 in H13. simpl (f ^ 0) in H13.
+                       apply Z.divide_1_r_nonneg in H13; lia. }
+                     lia.
+                 +++ exists (f ^ (fst (repeated_div f n) - i)). rewrite <- Z.pow_add_r; try lia. f_equal. ring.
+              ** clear H9. unfold Int64.divu. do 2 f_equal. rewrite H5; try lia. rewrite H2.
+                 rewrite Zdiv_Zdiv; try lia. f_equal. rewrite Z.pow_add_r; try lia.
+              ** clear H9. destruct Z.eq_dec; try lia. auto.
+    - fold (Z.div n (f ^ i)) in HRE. unfold Int64.modu in HRE. rewrite H5 in HRE; try lia. rewrite H2 in HRE.
+      assert ((n / f ^ i) mod f <> 0). { intro. apply HRE. congruence. } clear HRE.
+      forward. entailer!.
+      * do 2 f_equal. assert ((f | n / f ^ i) -> False).
+        { intro. apply H8. apply Z.mod_divide; try lia. auto. }
+        clear H8. assert (n = f ^ fst (repeated_div f n) * snd (repeated_div f n)) by (apply repeated_div_thm; try lia).
+        rewrite H8 at 1. rewrite Z.mul_comm. rewrite Zdivide_Zdiv_eq_2; try lia.
+        ++ rewrite <- Z.pow_sub_r; try lia. assert (i < fst (repeated_div f n) \/ i = fst (repeated_div f n)) by lia.
+           destruct H12.
+           -- exfalso. apply H11. rewrite H8. rewrite Z.mul_comm. rewrite Zdivide_Zdiv_eq_2; try lia.
+              rewrite <- Z.pow_sub_r; try lia. destruct (Zdivide_dec f (snd (repeated_div f n))).
+              ** destruct d. rewrite H13. exists (x * f ^ (fst (repeated_div f n) - i)). ring.
+              ** exists (snd (repeated_div f n) * f ^ (fst (repeated_div f n) - i - 1)).
+                 rewrite <- Z.mul_assoc. f_equal. replace f with (f ^ 1) at 5 by ring.
+                 rewrite <- Z.pow_add_r; try lia. f_equal. ring.
+              ** exists (f ^ (fst (repeated_div f n) - i)). rewrite <- Z.pow_add_r; try lia. f_equal. ring.
+           -- subst. ring_simplify (fst (repeated_div f n) - fst (repeated_div f n)). simpl (f ^ 0). ring.
+         ++ exists (f ^ (fst (repeated_div f n) - i)). rewrite <- Z.pow_add_r; try lia. f_equal. ring.
+      * assert ((f | n / f ^ i) -> False).
+        { intro. apply H8. apply Z.mod_divide; try lia. auto. }
+        clear H8. destruct Z.eq_dec; auto.
+        unfold new_highest. destruct Zdivide_dec; [destruct Z_le_dec |]; auto.
+        subst. simpl (f ^ 0) in H11. rewrite Z.div_1_r in H11. tauto.
+Qed.
 
