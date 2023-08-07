@@ -14,6 +14,29 @@ Proof.
   induction L1; simpl; lia.
 Qed.
 
+Function Zseq (n: Z) { measure Z.to_nat n }: list Z :=
+  if Z_le_dec n 0 then [] else Zseq (n - 1) ++ n :: nil.
+Proof. abstract lia. Defined.
+
+Theorem Zseq_thm (n: Z): forall x, In x (Zseq n) <-> 1 <= x <= n.
+Proof.
+  destruct (Z_le_dec n 0).
+  + intro. rewrite Zseq_equation. destruct Z_le_dec; try lia. intuition.
+  + intro. assert (1 <= n) by lia. clear n0. assert (0 <= n) by lia.
+    revert H x. pattern n. apply Z_lt_induction; auto; clear H0; intros. split; intros.
+    - rewrite Zseq_equation in H1. destruct Z_le_dec.
+      * elim H1.
+      * clear n0. apply in_app in H1. destruct H1.
+        ++ assert (x = 0 \/ x = 1 \/ 2 <= x) by lia. destruct H2; try lia. destruct H2; try lia.
+           -- subst. simpl in H1. elim H1.
+           -- apply H in H1; try lia.
+        ++ simpl in H1. destruct H1; try lia.
+    - rewrite Zseq_equation. destruct Z_le_dec; try lia. apply in_app.
+      assert (1 <= x0 <= x - 1 \/ x0 = x) by lia. destruct H2.
+      * left. apply H; try lia.
+      * subst. right. simpl. auto.
+Qed.
+
 Theorem prime_divisor_existence (n: Z) (H: 2 <= n):
   exists p, prime p /\ Z.divide p n.
 Proof.
@@ -224,41 +247,13 @@ Qed.
 
 Definition max_of_list (L: list Z): Z := fold_right Z.max 0 L.
 
-Function Zseq (n: Z) { measure Z.to_nat n }: list Z :=
-  if Z_le_dec n 0 then [] else Zseq (n - 1) ++ n :: nil.
-Proof. abstract lia. Defined.
-
-Theorem Zseq_thm (n: Z): forall x, In x (Zseq n) <-> 1 <= x <= n.
-Proof.
-  destruct (Z_le_dec n 0).
-  + intro. rewrite Zseq_equation. destruct Z_le_dec; try lia. intuition.
-  + intro. assert (1 <= n) by lia. clear n0. assert (0 <= n) by lia.
-    revert H x. pattern n. apply Z_lt_induction; auto; clear H0; intros. split; intros.
-    - rewrite Zseq_equation in H1. destruct Z_le_dec.
-      * elim H1.
-      * clear n0. apply in_app in H1. destruct H1.
-        ++ assert (x = 0 \/ x = 1 \/ 2 <= x) by lia. destruct H2; try lia. destruct H2; try lia.
-           -- subst. simpl in H1. elim H1.
-           -- apply H in H1; try lia.
-        ++ simpl in H1. destruct H1; try lia.
-    - rewrite Zseq_equation. destruct Z_le_dec; try lia. apply in_app.
-      assert (1 <= x0 <= x - 1 \/ x0 = x) by lia. destruct H2.
-      * left. apply H; try lia.
-      * subst. right. simpl. auto.
-Qed.
-
-Theorem Zseq_length (n: Z): 0 < n -> length (Zseq n) = Z.to_nat n.
-Proof.
-  intros. assert (0 <= n) by lia. revert H. pattern n. apply Z_lt_induction; auto. intros. clear H0.
-  assert (x = 1 \/ 0 <= x - 1 < x /\ 0 < x - 1) by lia.
-  destruct H0.
-  + subst. simpl. auto.
-  + destruct H0. rewrite Zseq_equation. destruct Z_le_dec; try lia.
-    rewrite app_length. simpl. rewrite H; auto. lia.
-Qed.
-
 (* prime_dec does not compute :( *)
-Definition brute_force (n: Z) := max_of_list (filter prime_dec (filter (fun x => Zdivide_dec x n) (Zseq n))).
+Definition all_prime_divisors (n: Z) := filter prime_dec (filter (fun x => Zdivide_dec x n) (Zseq n)).
+
+Definition factorization (n: Z) (H: 1 <= n): list Z :=
+  flat_map (fun x => repeat x (Z.to_nat (fst (repeated_div x n)))) (all_prime_divisors n).
+
+Definition brute_force (n: Z) := max_of_list (all_prime_divisors n).
 
 Definition biggest_prime_divisor (n m: Z) :=
   let P x := prime x /\ Z.divide x n in P m /\ forall k, P k -> k <= m.
@@ -303,8 +298,7 @@ Qed.
 Theorem biggest_prime_divisor_brute_thm n (H: 2 <= n): biggest_prime_divisor n (brute_force n).
 Proof.
   unfold biggest_prime_divisor. unfold brute_force.
-  assert (forall x, prime x -> (x | n) ->
-          In x (filter (fun p : Z => prime_dec p) (filter (fun x : Z => Zdivide_dec x n) (Zseq n)))).
+  assert (forall x, prime x -> (x | n) -> In x (all_prime_divisors n)).
   { intros. apply filter_In. split.
     + apply filter_In. split.
       - apply Zseq_thm. split.
@@ -313,10 +307,10 @@ Proof.
       - destruct Zdivide_dec; simpl; auto.
     + destruct prime_dec; simpl; auto. }
   pose proof (prime_divisor_existence _ H). destruct H1. destruct H1. pose proof (H0 _ H1 H2). 
-  assert (filter prime_dec (filter (fun w => Zdivide_dec w n) (Zseq n)) <> []).
+  assert (all_prime_divisors n <> []).
   { intro. rewrite H4 in H3. elim H3. }
-  assert (prime (max_of_list (filter (fun p : Z => prime_dec p) (filter (fun x : Z => Zdivide_dec x n) (Zseq n))))).
-  { pose proof (max_In_thm (filter (fun p : Z => prime_dec p) (filter (fun x : Z => Zdivide_dec x n) (Zseq n)))).
+  assert (prime (max_of_list (all_prime_divisors n))).
+  { pose proof (max_In_thm (all_prime_divisors n)).
     eapply H5 in H4; eauto.
     + apply filter_In in H4. destruct H4. destruct prime_dec in H6; simpl in *; try congruence.
     + intros. apply filter_In in H6. destruct H6. destruct prime_dec in H7; simpl in *; try congruence.
@@ -324,7 +318,7 @@ Proof.
   repeat split.
   + destruct H5. auto.
   + exists n0; lia.
-  + exists (max_of_list (filter (fun p : Z => prime_dec p) (filter (fun x0 : Z => Zdivide_dec x0 n) (Zseq n)))). lia.
+  + exists (max_of_list (all_prime_divisors n)). lia.
   + intros. apply prime_alt in H5. destruct H5. assert (x0 = 1 \/ x0 = -1 \/ x0 = 0 \/ 1 < x0 \/ x0 < - 1) by lia.
     destruct H10 as [H10 | [H11 | [H12 | [H13 | H14]]]].
     - subst. exists 1. auto.
@@ -334,8 +328,8 @@ Proof.
     - exfalso. apply (H9 (-x0)); auto.
       * split; try lia. destruct H7. assert (0 < -x1) by lia. nia.
       * destruct H8. rewrite H8. exists (-x1). ring.
-  + pose proof (max_In_thm (filter (fun p : Z => prime_dec p) (filter (fun x0 : Z => Zdivide_dec x0 n) (Zseq n)))).
-    pose proof (eq_refl (max_of_list (filter (fun p : Z => prime_dec p) (filter (fun x0 : Z => Zdivide_dec x0 n) (Zseq n))))).
+  + pose proof (max_In_thm (all_prime_divisors n)).
+    pose proof (eq_refl (max_of_list (all_prime_divisors n))).
     apply H6 in H7. clear H6.
     - apply filter_In in H7. destruct H7. apply filter_In in H6. destruct H6.
       destruct Zdivide_dec in H8; simpl in *; try congruence.
@@ -344,7 +338,6 @@ Proof.
       destruct p. lia.
   + intros. destruct H6. pose (H0 _ H6 H7). apply In_max_thm. auto.
 Qed.
-
 
 
 Require Import EulerProject3.
@@ -500,7 +493,7 @@ Proof.
 Qed.
 
 
-Lemma repeated_div_snd_thm (n: Z) (H: 2 <= n) f (H0: 2 <= f): 1 <= snd (repeated_div f n) <= n.
+Lemma repeated_div_snd_thm (n: Z) (H: 1 <= n) f (H0: 2 <= f): 1 <= snd (repeated_div f n) <= n.
 Proof.
   split.
   + unfold repeated_div. repeat destruct Z_le_dec; try lia. assert (0 <= n) by lia. revert l0. 
@@ -532,18 +525,97 @@ Lemma find_proof: semax_body Vprog Gprog f_find find_spec.
 Proof.
   start_function. forward. forward_call. forward_call.
   + split.
-    - assert (2 <= n) by lia. assert (2 <= 2) by lia. pose proof (repeated_div_snd_thm _ H1 _ H2). lia.
+    - assert (1 <= n) by lia. assert (2 <= 2) by lia. pose proof (repeated_div_snd_thm _ H1 _ H2). lia.
     - unfold new_highest. destruct Zdivide_dec; [destruct Z_le_dec |]; try lia.
   + autorewrite with norm.
+    forward_if (if prime_dec n
+                then PROP ()
+                     LOCAL (temp _n (Vlong (Int64.repr n)))
+                     SEP ()
+                else PROP ()
+                     LOCAL (temp _n (Vlong (Int64.repr 1)))
+                     SEP (data_at Ews tulong (Vlong (Int64.repr (brute_force n))) (gv _highest))).
+    assert (Int64.unsigned (Int64.repr 5) = 5) by reflexivity. rewrite H2 in H1. clear H2.
+    assert (Int64.unsigned (Int64.repr (snd (repeated_div 3 (snd (repeated_div 2 n))))) =
+            snd (repeated_div 3 (snd (repeated_div 2 n)))).
+    { rewrite Int64.unsigned_repr_eq. rewrite Z.mod_small; auto.
+      assert (1 <= snd (repeated_div 2 n) <= n).
+      { apply repeated_div_snd_thm; try lia. }
+      assert (1 <= snd (repeated_div 3 (snd (repeated_div 2 n))) <= snd (repeated_div 2 n)).
+      { apply repeated_div_snd_thm; try lia. }
+      unfold Int64.max_unsigned in H. lia. }
+    rewrite H2 in H1. clear H2. assert (1 <= n) by lia.
+    - forward_loop (
+        EX (i: Z),
+          PROP (0 <= i /\ (6 * i + 5) * (6 * i + 5) <= product (filter (Z_le_dec (6 * i + 5)) (factorization n H2)))
+          LOCAL (temp _n (Vlong (Int64.repr (product (filter (Z_le_dec (6 * i + 5)) (factorization n H2)))));
+                 temp _i (Vlong (Int64.repr (6 * i + 5))); gvars gv)
+          SEP (data_at Ews tulong (Vlong (Int64.repr (match (filter (fun w => Z_le_dec w (6 * i + 4)) (factorization n H2)) with
+                                                      | [] => 1
+                                                      | L => max_of_list L
+                                                      end))) (gv _highest))
+      ).
+      forward. entailer!. Exists 0. entailer!.
+      * repeat split; auto; try lia.
+        ++ admit.
+        ++ f_equal. f_equal. admit.
+      * unfold new_highest. repeat destruct Zdivide_dec.
+        ++ repeat if_tac; try lia. destruct Z_le_dec in H5; try lia. clear n0 H5. admit.
+        ++ repeat if_tac; try lia. clear H5. admit.
+        ++ repeat if_tac; try lia. clear H5. admit.
+        ++ admit.
+      * Intros i. forward_if. forward_call.
+        ++ apply ltu_false_inv64 in H4. rewrite Int64.unsigned_repr in H4. rewrite mul64_repr in H4.
+           rewrite Int64.unsigned_repr in H4. repeat split.
+           -- lia.
+           -- admit.
+           -- lia.
+           -- admit.
+           -- remember (filter (fun w => Z_le_dec w (6 * i + 4)) (factorization n H2)) as W. destruct W; try lia.
+              rewrite HeqW. admit.
+           -- remember (filter (fun w => Z_le_dec w (6 * i + 4)) (factorization n H2)) as W. destruct W; try lia.
+              rewrite HeqW. admit.
+           -- split; try lia. admit.
+           -- split; try lia. admit.
+        ++ apply ltu_false_inv64 in H4. rewrite Int64.unsigned_repr in H4. rewrite mul64_repr in H4.
+           rewrite Int64.unsigned_repr in H4. forward_call. repeat split.
+           -- apply repeated_div_snd_thm. lia. lia.
+           -- admit.
+           -- rewrite Int64.unsigned_repr. rewrite Int64.unsigned_repr.
+              ** lia.
+              ** lia.
+              ** split; try lia. admit.
+           -- rewrite Int64.unsigned_repr. rewrite Int64.unsigned_repr.
+              ** admit.
+              ** lia.
+              ** split; try lia. admit.
+           -- unfold new_highest. destruct Zdivide_dec; try repeat destruct Z_le_dec.
+              ** remember (filter (fun w => Z_le_dec w (6 * i + 4)) (factorization n H2)) as W. destruct W.
+                 +++ lia.
+                 +++ lia.
+              ** lia.
+              ** remember (filter (fun w => Z_le_dec w (6 * i + 4)) (factorization n H2)) as W. destruct W.
+                 +++ lia.
+                 +++ rewrite HeqW. admit.
+           -- remember (filter (Z_le_dec (6 * i + 5)) (factorization n H2)) as W1. unfold new_highest.
+              destruct Zdivide_dec; repeat destruct Z_le_dec.
+              ** remember (filter (fun w => Z_le_dec w (6 * i + 4)) (factorization n H2)) as W2. destruct W2.
+                 +++ lia.
+                 +++ rewrite HeqW2. admit.
+              ** admit.
+              ** remember (filter (fun w => Z_le_dec w (6 * i + 4)) (factorization n H2)) as W2. destruct W2.
+                 +++ lia.
+                 +++ rewrite HeqW2. admit.
+           -- autorewrite with norm. forward. Exists (i + 1). entailer!. repeat split.
+              ** lia.
+              ** admit.
+              ** do 2 f_equal. rewrite Int64.unsigned_repr. rewrite Int64.unsigned_repr.
+                 +++ admit.
+                 +++ lia.
+                 +++ admit.
+              ** do 2 f_equal. ring.
+              ** admit. (* Expand *)
+           -- split. lia. admit.
+           -- split. lia. admit.
+        ++ forward. Fail entailer!.
 Admitted.
-
-
-
-
-
-
-
-
-
-
-
