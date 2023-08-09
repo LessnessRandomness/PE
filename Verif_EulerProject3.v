@@ -613,6 +613,18 @@ Proof.
       lia.
 Qed.
 
+Theorem repeated_repeated_div_thm10 (i n: Z) (H: 1 <= n) (H0: 2 <= i):
+  forall k, 1 < k -> Z.divide k (repeated_repeated_div i n H) -> k > i.
+Proof.
+Admitted.
+
+Definition value_of_highest i n (H: 1 <= n) :=
+  match prime_divisor_list i n H with
+  | nil => 1
+  | x :: _ => x
+  end.
+
+
 Lemma find_proof: semax_body Vprog Gprog f_find find_spec.
 Proof.
   start_function. forward. forward_call. forward_call.
@@ -622,10 +634,10 @@ Proof.
   + autorewrite with norm.
     forward_if (if prime_dec n
                 then PROP ()
-                     LOCAL (temp _n (Vlong (Int64.repr n)))
-                     SEP ()
+                     LOCAL (temp _n (Vlong (Int64.repr n))) (* ??? *)
+                     SEP (data_at Ews tulong (Vlong (Int64.repr 1)) (gv _highest))
                 else PROP ()
-                     LOCAL (temp _n (Vlong (Int64.repr 1)))
+                     LOCAL (temp _n (Vlong (Int64.repr n)))
                      SEP (data_at Ews tulong (Vlong (Int64.repr (brute_force n))) (gv _highest))).
     assert (Int64.unsigned (Int64.repr 5) = 5) by reflexivity. rewrite H2 in H1. clear H2.
     assert (Int64.unsigned (Int64.repr (snd (repeated_div 3 (snd (repeated_div 2 n))))) =
@@ -639,57 +651,114 @@ Proof.
     rewrite H2 in H1. clear H2. assert (1 <= n) by lia.
     - forward_loop (
         EX (i: Z),
-          PROP (0 <= i /\ if Z.eq_dec i 0 then True else (6 * i + 5) * (6 * i + 5) <= repeated_repeated_div (6 * i + 4) n H2)
-          LOCAL (temp _n (Vlong (Int64.repr (repeated_repeated_div (6 * i + 4) n H2)));
+          PROP (let W := repeated_repeated_div (6 * i + 3) n H2 in
+                0 <= i /\ if prime_dec W then True else (6 * i + 5) * (6 * i + 5) <= W)
+          LOCAL (temp _n (Vlong (Int64.repr (repeated_repeated_div (6 * i + 3) n H2)));
                  temp _i (Vlong (Int64.repr (6 * i + 5))); gvars gv)
-          SEP (data_at Ews tulong (Vlong (Int64.repr (match prime_divisor_list (6 * i + 4) n H2 with
-                                                      | nil => 1
-                                                      | x :: t => x
-                                                      end))) (gv _highest))
+          SEP (data_at Ews tulong (Vlong (Int64.repr (value_of_highest (6 * i + 3) n H2))) (gv _highest))
       ).
-      forward. entailer!. Exists 0. 
-      assert (~ prime 4).
-      { intro. destruct H5. assert (1 <= 2 < 4) by lia. apply H6 in H7.
-        unfold rel_prime in H7. inversion H7.
-        assert (2 | 2). { exists 1. ring. }
-        assert (2 | 4). { exists 2. ring. }
-        pose proof (H10 _ H11 H12). destruct H13. lia. }
-        entailer!.
-      * assert (repeated_repeated_div 4 n H2 = snd (repeated_div 3 (snd (repeated_div 2 n)))).
-        { rewrite repeated_repeated_div_thm8; try lia; auto. }
-        rewrite H6. repeat split; lia.
+      forward. entailer!. Exists 0. entailer!.
+      * destruct (prime_dec (repeated_repeated_div 3 n H2)). auto.
+        admit.
       * unfold new_highest. repeat destruct Zdivide_dec.
-        ++ repeat if_tac; try lia. destruct Z_le_dec in H6; try lia.
-           rewrite prime_divisor_list_equation. repeat if_tac; try lia.
-           -- exfalso. simpl in H8. apply repeated_repeated_div_thm7 in H8; auto; try lia.
-           -- simpl. rewrite prime_divisor_list_equation. repeat destruct Z_le_dec; try lia.
-              repeat destruct Zdivide_dec; try tauto. auto.
-        ++ destruct Z_le_dec; try lia. rewrite prime_divisor_list_equation. destruct Z_le_dec; try lia.
-           simpl. destruct Zdivide_dec.
-           -- exfalso. apply repeated_repeated_div_thm4 in d0; try lia. destruct d0. subst. apply n0. exists (2 * x). ring.
-           -- rewrite prime_divisor_list_equation. destruct Z_le_dec; try lia. destruct Zdivide_dec; auto.
-              exfalso. simpl in n5. rewrite repeated_repeated_div_equation in n5. destruct Z_le_dec; try lia.
-              simpl in n5. rewrite repeated_repeated_div_equation in n5. destruct Z_le_dec; try lia. tauto.
-        ++ destruct Z_le_dec; try lia. rewrite prime_divisor_list_equation. destruct Z_le_dec; try lia. simpl.
-           destruct Zdivide_dec.
-           -- exfalso. pose proof (repeated_repeated_div_thm7 4 n H2 ltac:(lia) H5). simpl in H6. tauto.
+        ++ repeat if_tac; try lia. destruct Z_le_dec in H5; try lia. unfold value_of_highest.
+           rewrite prime_divisor_list_equation. repeat if_tac; try lia; auto.
+           simpl. rewrite prime_divisor_list_equation. repeat destruct Z_le_dec; try lia.
+           repeat destruct Zdivide_dec; try tauto.
+        ++ destruct Z_le_dec; try lia. unfold value_of_highest. rewrite prime_divisor_list_equation.
+           destruct Z_le_dec; try lia. simpl. destruct Zdivide_dec; auto. rewrite prime_divisor_list_equation.
+           destruct Z_le_dec; try lia. simpl. destruct Zdivide_dec; auto.
+           -- exfalso. simpl in *. rewrite repeated_repeated_div_equation in d0. destruct Z_le_dec; try lia. tauto.
+           -- simpl in *. exfalso. rewrite repeated_repeated_div_equation in n3. destruct Z_le_dec; try lia.
+              simpl in *. rewrite repeated_repeated_div_equation in n3. destruct Z_le_dec; try lia. tauto.
+        ++ destruct Z_le_dec; try lia. unfold value_of_highest. rewrite prime_divisor_list_equation.
+           destruct Z_le_dec; try lia. simpl. destruct Zdivide_dec.
+           -- exfalso. rewrite repeated_repeated_div_equation in d0. destruct Z_le_dec; try lia. simpl in *.
+              rewrite repeated_repeated_div_equation in d0. destruct Z_le_dec; try lia. tauto.
+           -- rewrite prime_divisor_list_equation. destruct Z_le_dec; try lia. simpl. destruct Zdivide_dec; auto.
+              rewrite prime_divisor_list_equation. destruct Z_le_dec; try lia. exfalso.
+              rewrite repeated_repeated_div_equation in n5. destruct Z_le_dec; try lia. tauto.
+        ++ unfold value_of_highest. rewrite prime_divisor_list_equation. destruct Z_le_dec; try lia. simpl. destruct Zdivide_dec.
+           -- exfalso. rewrite repeated_repeated_div_equation in d. destruct Z_le_dec; try lia. simpl in *.
+              rewrite repeated_repeated_div_equation in d. destruct Z_le_dec; try lia. tauto.
            -- rewrite prime_divisor_list_equation. destruct Z_le_dec; try lia. simpl. destruct Zdivide_dec.
-              ** exfalso. rewrite repeated_repeated_div_equation in d0. destruct Z_le_dec; try lia. simpl in d0.
-                 rewrite repeated_repeated_div_equation in d0. destruct Z_le_dec; try lia. tauto.
-              ** rewrite prime_divisor_list_equation. destruct Z_le_dec; try lia. simpl. destruct Zdivide_dec; auto.
-                 exfalso. rewrite repeated_repeated_div_equation in n7. destruct Z_le_dec; try lia. tauto.
-        ++ rewrite prime_divisor_list_equation. destruct Z_le_dec; try lia. simpl. destruct Zdivide_dec.
-           -- exfalso. apply repeated_repeated_div_thm4 in d; try lia. destruct d. subst. apply n1. exists (2 * x). ring.
-           -- rewrite prime_divisor_list_equation. destruct Z_le_dec; try lia. simpl. destruct Zdivide_dec.
-              ** exfalso. rewrite repeated_repeated_div_equation in d. destruct Z_le_dec; try lia. simpl in d.
-                 rewrite repeated_repeated_div_equation in d. destruct Z_le_dec; try lia. tauto.
-              ** rewrite prime_divisor_list_equation. destruct Z_le_dec; try lia. simpl. destruct Zdivide_dec.
-                 +++ exfalso. rewrite repeated_repeated_div_equation in d. destruct Z_le_dec; try lia. tauto.
-                 +++ rewrite prime_divisor_list_equation. destruct Z_le_dec; try lia. auto.
-      * Intros i. forward_if. abbreviate_semax. forward_call.
-        ++ assert (repeated_repeated_div (6 * i + 4) n H2 >= (6 * i + 5) * (6 * i + 5)).
-           { apply ltu_false_inv64 in H5. rewrite Int64.unsigned_repr in H5.
-             -- unfold Int64.mul in H5. rewrite Int64.unsigned_repr in H5.
-                ** rewrite Int64.unsigned_repr in H5; auto. 
-                   split; try lia.
+              ** exfalso. rewrite repeated_repeated_div_equation in d. destruct Z_le_dec; try lia. tauto.
+              ** rewrite prime_divisor_list_equation. destruct Z_le_dec; try lia. auto.
+      * Intros i. forward_if.
+        ++ abbreviate_semax. assert (repeated_repeated_div (6 * i + 3) n H2 >= (6 * i + 5) * (6 * i + 5)).
+           { apply ltu_false_inv64 in H4. rewrite Int64.unsigned_repr in H4.
+             + unfold Int64.mul in H4. rewrite Int64.unsigned_repr in H4.
+               - rewrite Int64.unsigned_repr in H4; auto. destruct H3. split; try lia. admit.
+               - rewrite Int64.unsigned_repr. destruct H3.
+                 * split. lia. admit.
+                 * split. destruct H3; lia. admit.
+             + admit. }
+           clear H4. destruct H3. forward_call.
+           -- repeat split; try lia.
+              ** admit.
+              ** admit.
+              ** unfold value_of_highest. admit.
+              ** admit.
+           -- forward_call.
+              ** repeat split.
+                 +++ apply repeated_div_thm1; try lia.
+                 +++ pose proof (repeated_div_thm1 (6 * i + 5) ltac:(lia) (repeated_repeated_div (6 * i + 3) n H2) ltac:(lia)).
+                     admit.
+                 +++ rewrite Int64.unsigned_repr.
+                     --- rewrite Int64.unsigned_repr. lia. lia.
+                     --- split. lia. admit.
+                 +++ rewrite Int64.unsigned_repr.
+                     --- rewrite Int64.unsigned_repr.
+                         *** admit.
+                         *** lia.
+                     --- split. lia. admit.
+                 +++ unfold new_highest. destruct Zdivide_dec.
+                     --- destruct Z_le_dec; try lia.
+                     --- admit.
+                 +++ unfold new_highest. destruct Zdivide_dec.
+                     --- destruct Z_le_dec. admit. admit.
+                     --- admit.
+              ** autorewrite with norm. forward. Exists (i + 1). entailer!. repeat split.
+                 +++ destruct (prime_dec (repeated_repeated_div (6 * (i + 1) + 3) n H2)); auto.
+                     ring_simplify (6 * (i + 1) + 5). ring_simplify (6 * (i + 1) + 3). admit.
+                 +++ do 2 f_equal. rewrite Int64.unsigned_repr.
+                     --- rewrite Int64.unsigned_repr.
+                         *** ring_simplify (6 * (i + 1) + 3). ring_simplify (6 * i + 5 + 2). admit.
+                         *** lia.
+                     --- split. lia. admit.
+                 +++ do 2 f_equal. ring.
+                 +++ rewrite Int64.unsigned_repr.
+                     --- rewrite Int64.unsigned_repr; try lia. unfold value_of_highest. unfold new_highest.
+                         destruct Zdivide_dec.
+                         *** destruct Z_le_dec.
+                             ++++ destruct Zdivide_dec.
+                                  ---- destruct Z_le_dec.
+                                       **** exfalso. clear l0. ring_simplify (6 * i + 5 + 2) in d.
+                                            ring_simplify (6 * i + 5 + 2) in l. admit.
+                                       **** lia.
+                                  ---- ring_simplify (6 * (i + 1) + 3). exfalso. admit.
+                             ++++ admit.
+                         *** destruct Zdivide_dec.
+                             ++++ destruct Z_le_dec.
+                                  ---- ring_simplify (6 * (i + 1) + 3). exfalso. admit.
+                                  ---- ring_simplify (6 * (i + 1) + 3). admit.
+                             ++++ ring_simplify (6 * (i + 1) + 3). admit.
+                     --- split. lia. admit.
+        ++ destruct H3. destruct prime_dec in H5.
+           -- forward. destruct (prime_dec n).
+              ** entailer!.
+                 +++ do 2 f_equal. admit.
+                 +++ admit.
+              ** entailer!.
+                 +++ admit.
+                 +++ (* ??? *) admit.
+           -- forward. destruct (prime_dec n).
+              ** exfalso. admit.
+              ** exfalso. admit.
+    - forward. destruct (prime_dec n).
+      * exfalso. admit.
+      * exfalso. admit.
+    - destruct (prime_dec n).
+      * admit. (* ??? *)
+      * admit. (* ??? *)
 Admitted.
