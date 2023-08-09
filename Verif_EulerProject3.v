@@ -627,38 +627,39 @@ Definition value_of_highest i n (H: 1 <= n) :=
 
 Lemma find_proof: semax_body Vprog Gprog f_find find_spec.
 Proof.
-  start_function. forward. forward_call. forward_call.
+  start_function. assert (1 <= n) by lia. forward. forward_call. forward_call.
   + split.
-    - assert (1 <= n) by lia. assert (2 <= 2) by lia. pose proof (repeated_div_thm1 _ H1 _ H2). lia.
+    - assert (2 <= 2) by lia. pose proof (repeated_div_thm1 _ H1 _ H2). lia.
     - unfold new_highest. destruct Zdivide_dec; [destruct Z_le_dec |]; try lia.
   + autorewrite with norm.
-    forward_if (if prime_dec n
+    (* ??? *)
+    forward_if (if prime_dec (repeated_repeated_div 3 n H1)
                 then PROP ()
-                     LOCAL (temp _n (Vlong (Int64.repr n))) (* ??? *)
-                     SEP (data_at Ews tulong (Vlong (Int64.repr 1)) (gv _highest))
+                     LOCAL (temp _n (Vlong (Int64.repr (repeated_repeated_div 3 n H1))))
+                     SEP (data_at Ews tulong (Vlong (Int64.repr (value_of_highest 3 n H1))) (gv _highest))
                 else PROP ()
-                     LOCAL (temp _n (Vlong (Int64.repr n)))
+                     LOCAL (temp _n (Vlong (Int64.repr 1)))
                      SEP (data_at Ews tulong (Vlong (Int64.repr (brute_force n))) (gv _highest))).
-    assert (Int64.unsigned (Int64.repr 5) = 5) by reflexivity. rewrite H2 in H1. clear H2.
+    assert (Int64.unsigned (Int64.repr 5) = 5) by reflexivity. rewrite H3 in H2. clear H3.
     assert (Int64.unsigned (Int64.repr (snd (repeated_div 3 (snd (repeated_div 2 n))))) =
             snd (repeated_div 3 (snd (repeated_div 2 n)))).
-    { rewrite Int64.unsigned_repr_eq. rewrite Z.mod_small; auto.
+    { rewrite Int64.unsigned_repr; auto.
       assert (1 <= snd (repeated_div 2 n) <= n).
       { apply repeated_div_thm1; try lia. }
       assert (1 <= snd (repeated_div 3 (snd (repeated_div 2 n))) <= snd (repeated_div 2 n)).
       { apply repeated_div_thm1; try lia. }
-      unfold Int64.max_unsigned in H. lia. }
-    rewrite H2 in H1. clear H2. assert (1 <= n) by lia.
+      lia. }
+    rewrite H3 in H2. clear H3.
     - forward_loop (
         EX (i: Z),
-          PROP (let W := repeated_repeated_div (6 * i + 3) n H2 in
+          PROP (let W := repeated_repeated_div (6 * i + 3) n H1 in
                 0 <= i /\ if prime_dec W then True else (6 * i + 5) * (6 * i + 5) <= W)
-          LOCAL (temp _n (Vlong (Int64.repr (repeated_repeated_div (6 * i + 3) n H2)));
+          LOCAL (temp _n (Vlong (Int64.repr (repeated_repeated_div (6 * i + 3) n H1)));
                  temp _i (Vlong (Int64.repr (6 * i + 5))); gvars gv)
-          SEP (data_at Ews tulong (Vlong (Int64.repr (value_of_highest (6 * i + 3) n H2))) (gv _highest))
+          SEP (data_at Ews tulong (Vlong (Int64.repr (value_of_highest (6 * i + 3) n H1))) (gv _highest))
       ).
       forward. entailer!. Exists 0. entailer!.
-      * destruct (prime_dec (repeated_repeated_div 3 n H2)). auto.
+      * destruct (prime_dec (repeated_repeated_div 3 n H1)). auto.
         admit.
       * unfold new_highest. repeat destruct Zdivide_dec.
         ++ repeat if_tac; try lia. destruct Z_le_dec in H5; try lia. unfold value_of_highest.
@@ -685,7 +686,7 @@ Proof.
               ** exfalso. rewrite repeated_repeated_div_equation in d. destruct Z_le_dec; try lia. tauto.
               ** rewrite prime_divisor_list_equation. destruct Z_le_dec; try lia. auto.
       * Intros i. forward_if.
-        ++ abbreviate_semax. assert (repeated_repeated_div (6 * i + 3) n H2 >= (6 * i + 5) * (6 * i + 5)).
+        ++ abbreviate_semax. assert (repeated_repeated_div (6 * i + 3) n H1 >= (6 * i + 5) * (6 * i + 5)).
            { apply ltu_false_inv64 in H4. rewrite Int64.unsigned_repr in H4.
              + unfold Int64.mul in H4. rewrite Int64.unsigned_repr in H4.
                - rewrite Int64.unsigned_repr in H4; auto. destruct H3. split; try lia. admit.
@@ -702,7 +703,7 @@ Proof.
            -- forward_call.
               ** repeat split.
                  +++ apply repeated_div_thm1; try lia.
-                 +++ pose proof (repeated_div_thm1 (6 * i + 5) ltac:(lia) (repeated_repeated_div (6 * i + 3) n H2) ltac:(lia)).
+                 +++ pose proof (repeated_div_thm1 (6 * i + 5) ltac:(lia) (repeated_repeated_div (6 * i + 3) n H1) ltac:(lia)).
                      admit.
                  +++ rewrite Int64.unsigned_repr.
                      --- rewrite Int64.unsigned_repr. lia. lia.
@@ -719,7 +720,7 @@ Proof.
                      --- destruct Z_le_dec. admit. admit.
                      --- admit.
               ** autorewrite with norm. forward. Exists (i + 1). entailer!. repeat split.
-                 +++ destruct (prime_dec (repeated_repeated_div (6 * (i + 1) + 3) n H2)); auto.
+                 +++ destruct (prime_dec (repeated_repeated_div (6 * (i + 1) + 3) n H1)); auto.
                      ring_simplify (6 * (i + 1) + 5). ring_simplify (6 * (i + 1) + 3). admit.
                  +++ do 2 f_equal. rewrite Int64.unsigned_repr.
                      --- rewrite Int64.unsigned_repr.
@@ -745,20 +746,34 @@ Proof.
                              ++++ ring_simplify (6 * (i + 1) + 3). admit.
                      --- split. lia. admit.
         ++ destruct H3. destruct prime_dec in H5.
-           -- forward. destruct (prime_dec n).
+           -- forward. destruct (prime_dec (repeated_repeated_div 3 n H1)).
               ** entailer!.
                  +++ do 2 f_equal. admit.
                  +++ admit.
               ** entailer!.
                  +++ admit.
                  +++ (* ??? *) admit.
-           -- forward. destruct (prime_dec n).
+           -- forward. destruct (prime_dec (repeated_repeated_div 3 n H1)).
               ** exfalso. admit.
               ** exfalso. admit.
-    - forward. destruct (prime_dec n).
-      * exfalso. admit.
-      * exfalso. admit.
-    - destruct (prime_dec n).
-      * admit. (* ??? *)
-      * admit. (* ??? *)
+    - forward. destruct (prime_dec (repeated_repeated_div 3 n H1)).
+      * admit.
+      * admit.
+    - destruct (prime_dec (repeated_repeated_div 3 n H1)).
+      * forward_if (
+          PROP ()
+          LOCAL (gvars gv) (* Fix this *)
+          SEP (data_at Ews tulong (Vlong (Int64.repr (value_of_highest 3 n H1))) (gv _highest))
+        ).
+        ++ exfalso. assert (repeated_repeated_div 3 n H1 = 1) by admit. rewrite H3 in p. destruct p. lia.
+        ++ forward. entailer!. (*?? What does Missing_gvars gv mean? *) admit.
+        ++ Fail forward. admit.
+      * forward_if (
+          PROP ()
+          LOCAL (gvars gv) (* And also fix this *)
+          SEP (data_at Ews tulong (Vlong (Int64.repr (brute_force n))) (gv _highest))
+        ).
+        ++ deadvars!. Fail forward. admit.
+        ++ congruence.
+        ++ Fail forward. admit.
 Admitted.
