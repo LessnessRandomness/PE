@@ -717,6 +717,16 @@ Proof.
   apply brute_force_and_prime_divisor_list_thm; auto.
 Qed.
 
+Theorem repeated_div_thm5 n (H: 1 <= n) a b (Ha: prime a) (Hb: prime b):
+  snd (repeated_div a (snd (repeated_div b n))) = snd (repeated_div b (snd (repeated_div a n))).
+Proof.
+  assert (a = b \/ a <> b) by lia. destruct H0.
+  + subst. auto.
+  + admit.
+Admitted.
+
+
+
 Lemma find_proof: semax_body Vprog Gprog f_find find_spec.
 Proof.
   start_function. assert (Int64.max_unsigned = 18446744073709551615) as HH by auto.
@@ -790,7 +800,34 @@ Proof.
                          destruct Zdivide_dec.
                          *** simpl in d. rewrite repeated_repeated_div_equation in d. destruct Z_le_dec; try lia. tauto.
                          *** simpl. auto.
-           -- unfold new_highest. rewrite brute_force_and_all_prime_divisors_equiv with (H := proj1 H). admit.
+           -- rewrite brute_force_and_all_prime_divisors_equiv with (H := proj1 H).
+              assert (1 <= snd (repeated_div 3 (snd (repeated_div 2 n)))).
+              { apply repeated_div_thm1; try lia. apply repeated_div_thm1; try lia. }
+              assert (let W := snd (repeated_div 3 (snd (repeated_div 2 n))) in W = 1 \/ W = 2 \/ W = 3 \/ W = 4) by lia.
+              destruct H4 as [H4 | [H4 | [H4 | H4]]].
+              ** assert (forall H, value_of_highest n n H = value_of_highest 3 n H). { admit. }
+                 entailer!. rewrite H5; auto. unfold value_of_highest. rewrite prime_divisor_list_equation. simpl.
+                 rewrite prime_divisor_list_equation. simpl. rewrite prime_divisor_list_equation. simpl.
+                 unfold new_highest. destruct Zdivide_dec.
+                 +++ destruct Z_le_dec; try lia.
+                     --- destruct Zdivide_dec; try lia. destruct Z_le_dec; try lia.
+                     --- destruct Zdivide_dec; try lia.
+                         *** auto.
+                         *** auto.
+                 +++ destruct Zdivide_dec.
+                     --- destruct Z_le_dec; try lia. auto.
+                     --- auto.
+              ** exfalso. pose proof prime_2. pose proof prime_3. rewrite repeated_div_thm5 in H4; try lia; auto.
+                 assert (2 | snd (repeated_div 2 (snd (repeated_div 3 n)))).
+                 { exists 1. lia. }
+                 apply repeated_div_thm2 in H7; try lia; auto. apply repeated_div_thm1; try lia.
+              ** exfalso. assert (3 | snd (repeated_div 3 (snd (repeated_div 2 n)))).
+                 { exists 1. lia. }
+                 apply repeated_div_thm2 in H5; try lia; auto. apply repeated_div_thm1; try lia.
+              ** exfalso. pose proof prime_2. pose proof prime_3. rewrite repeated_div_thm5 in H4; try lia; auto.
+                 assert (2 | snd (repeated_div 2 (snd (repeated_div 3 n)))).
+                 { exists 2. lia. }
+                 apply repeated_div_thm2 in H7; try lia; auto. apply repeated_div_thm1; try lia.
       * pose proof (repeated_div_thm1 n H1 2 ltac:(lia)). pose proof (repeated_div_thm1 _ (proj1 H3) 3 ltac:(lia)). lia.
     - destruct prime_dec.
       * admit.
