@@ -805,18 +805,48 @@ Proof.
               { apply repeated_div_thm1; try lia. apply repeated_div_thm1; try lia. }
               assert (let W := snd (repeated_div 3 (snd (repeated_div 2 n))) in W = 1 \/ W = 2 \/ W = 3 \/ W = 4) by lia.
               destruct H4 as [H4 | [H4 | [H4 | H4]]].
-              ** assert (forall H, value_of_highest n n H = value_of_highest 3 n H). { admit. }
-                 entailer!. rewrite H5; auto. unfold value_of_highest. rewrite prime_divisor_list_equation. simpl.
-                 rewrite prime_divisor_list_equation. simpl. rewrite prime_divisor_list_equation. simpl.
-                 unfold new_highest. destruct Zdivide_dec.
-                 +++ destruct Z_le_dec; try lia.
-                     --- destruct Zdivide_dec; try lia. destruct Z_le_dec; try lia.
-                     --- destruct Zdivide_dec; try lia.
+              ** clear H2 n0 H3. assert (n = 2 \/ 3 <= n) by lia. destruct H2.
+                 +++ subst. unfold new_highest. unfold value_of_highest. rewrite prime_divisor_list_equation.
+                     simpl (2 - 1). rewrite prime_divisor_list_equation. simpl (1 - 1).
+                     rewrite repeated_repeated_div_equation. destruct (Z_le_dec 1 1); try lia.
+                     simpl (snd (repeated_div 2 2)). simpl (snd (repeated_div 3 1)). destruct (Z_le_dec 2 1); try lia.
+                     destruct Zdivide_dec.
+                     --- destruct d. lia.
+                     --- destruct Zdivide_dec.
+                         *** entailer!.
+                         *** entailer!.
+                 +++ assert (forall i H, 0 <= i -> repeated_repeated_div (3 + i) n H = 1).
+                     { intros. pose proof H5. revert H6. pattern i. apply Z_lt_induction; auto; intros.
+                       clear H5 i. assert (x = 0 \/ 1 <= x) by lia. destruct H5.
+                       + subst. simpl. rewrite repeated_repeated_div_equation. simpl.
+                         rewrite repeated_repeated_div_equation. simpl.
+                         rewrite repeated_repeated_div_equation. simpl. auto.
+                       + rewrite repeated_repeated_div_equation. destruct Z_le_dec; try lia.
+                         replace (3 + x - 1) with (3 + (x - 1)) by ring. rewrite H6; try lia.
+                         unfold repeated_div. destruct Z_le_dec; try lia. destruct Z_le_dec; try lia.
+                         rewrite repeated_div'_equation. destruct Zdivide_dec.
+                         - pose proof (Z.divide_1_r_nonneg (3 + x) ltac:(lia) d). lia.
+                         - auto. }
+                     assert (forall i H, 0 <= i -> value_of_highest (3 + i) n H = value_of_highest 3 n H).
+                     { clear h H0 HH H. intros. pose proof H0. revert H5. pattern i.
+                       apply Z_lt_induction; auto; intros. clear H0 i. assert (x = 0 \/ 1 <= x) by lia. destruct H0.
+                       + subst. auto.
+                       + unfold value_of_highest at 1. rewrite prime_divisor_list_equation. destruct Z_le_dec; try lia.
+                         destruct Zdivide_dec.
+                         - exfalso. replace (3 + x - 1) with (3 + (x - 1)) in d by ring. rewrite H3 in d; try lia.
+                           apply Z.divide_1_r_nonneg in d; try lia.
+                         - replace (3 + x - 1) with (3 + (x - 1)) by ring. apply H5; try lia. }
+                     entailer!. assert (forall H, value_of_highest n n H = value_of_highest (3 + (n - 3)) n H).
+                     { intros. f_equal. ring. }
+                     rewrite H8. rewrite H5; try lia. unfold value_of_highest. rewrite prime_divisor_list_equation. simpl.
+                     rewrite prime_divisor_list_equation. simpl. rewrite prime_divisor_list_equation. simpl.
+                     unfold new_highest. destruct Zdivide_dec.
+                     --- destruct Z_le_dec; try lia.
+                         *** destruct Zdivide_dec; try lia. destruct Z_le_dec; try lia.
+                         *** destruct Zdivide_dec; try lia; auto.
+                     --- destruct Zdivide_dec.
+                         *** destruct Z_le_dec; try lia. auto.
                          *** auto.
-                         *** auto.
-                 +++ destruct Zdivide_dec.
-                     --- destruct Z_le_dec; try lia. auto.
-                     --- auto.
               ** exfalso. pose proof prime_2. pose proof prime_3. rewrite repeated_div_thm5 in H4; try lia; auto.
                  assert (2 | snd (repeated_div 2 (snd (repeated_div 3 n)))).
                  { exists 1. lia. }
