@@ -862,147 +862,35 @@ Proof.
   + apply repeated_div_thm5; auto.
 Qed.
 
-(* Apologies for this messy/long/nonoptimized proof. *)
+Theorem aux12 a b c d (H1: 1 <= a) (H2: 1 <= b) (H3: 1 <= c) (H4: 1 <= d) (H5: (b | a)) (H6: (d | c)):
+  a * d = b * c -> a / b = c / d.
+Proof.
+  intros. apply aux10 with (c := b * d). nia.
+  rewrite Z.mul_assoc. rewrite aux8; auto. rewrite Z.div_mul; try lia.
+  rewrite (Z.mul_comm b). rewrite Z.mul_assoc. rewrite aux8; try lia; auto. rewrite Z.div_mul; try lia; auto.
+Qed.
+
 Theorem repeated_div_thm6 n (H: 1 <= n) a b (Ha: 2 <= a) (Hb: 2 <= b) (H0: rel_prime a b):
   snd (repeated_div a (snd (repeated_div b n))) = snd (repeated_div b (snd (repeated_div a n))).
 Proof.
-  assert (n = n / a ^ fst (repeated_div a n) / b ^ fst (repeated_div b n) * a ^ fst (repeated_div a n) * b ^ fst (repeated_div b n)).
-  { replace n with (b ^ fst (repeated_div b n) * snd (repeated_div b n)) at 1.
-    + rewrite <- Z.mul_assoc. rewrite (Z.mul_comm (a ^ _)). rewrite Z.mul_assoc. rewrite aux8.
-      - rewrite Z.div_mul.
-        * rewrite aux8; auto.
-          ++ rewrite Z.div_mul.
-             -- rewrite <- repeated_div_thm0; auto.
-             -- apply Z.pow_nonzero; try lia. apply repeated_div_thm5; auto.
-          ++ assert (0 < a ^ fst (repeated_div a n)).
-             { apply Z.pow_pos_nonneg; try lia. apply repeated_div_thm5; auto. }
-             lia.
-          ++ exists (snd (repeated_div a n)). rewrite Z.mul_comm. rewrite <- repeated_div_thm0; auto.
-        * apply Z.pow_nonzero; try lia. apply repeated_div_thm5; auto.
-      - replace n with (a ^ fst (repeated_div a n) * snd (repeated_div a n)) at 1.
-        * rewrite Z.mul_comm. rewrite Z.div_mul.
-          ++ apply repeated_div_thm1; auto.
-          ++ apply Z.pow_nonzero; try lia. apply repeated_div_thm5; auto.
-        * rewrite <- repeated_div_thm0; auto.
-      - assert (0 < b ^ fst (repeated_div b n)).
-        { apply Z.pow_pos_nonneg; try lia. apply repeated_div_thm5; auto. }
-        lia.
-      - replace (n / a ^ fst (repeated_div a n)) with (snd (repeated_div a n)).
-        * apply aux11; auto. apply rel_prime_sym; auto.
-        * replace n with (snd (repeated_div a n) * a ^ fst (repeated_div a n)) at 2.
-          ++ rewrite Z.div_mul; auto. apply Z.pow_nonzero; try lia. apply repeated_div_thm5; auto.
-          ++ rewrite Z.mul_comm. rewrite <- repeated_div_thm0; auto.
-   + rewrite <- repeated_div_thm0; auto. }
-  rewrite H1. rewrite aux3; try lia.
-  + rewrite aux3; try lia.
-    - rewrite <- Z.mul_assoc. rewrite (Z.mul_comm (a ^ _)). rewrite Z.mul_assoc. rewrite aux3; try lia.
-      * rewrite aux3; try lia.
-        ++ intro. apply aux9 in H2; auto.
-           -- replace (n / b ^ fst (repeated_div b n)) with (snd (repeated_div b n)) in H2.
-              ** apply repeated_div_thm2 in H2; auto.
-              ** rewrite repeated_div_thm0 with (n:=n) (f:=b) at 2; auto. rewrite Z.mul_comm. rewrite Z.div_mul; auto.
-                 apply Z.pow_nonzero; try lia. apply repeated_div_thm5; auto.
-           -- apply repeated_div_thm5; auto.
-           -- apply repeated_div_thm5; auto.
-           -- exists (snd (repeated_div a n)). rewrite Z.mul_comm. apply repeated_div_thm0; auto.
-           -- exists (snd (repeated_div b n)). rewrite Z.mul_comm. apply repeated_div_thm0; auto.
-        ++ apply repeated_div_thm5; auto.
-      * intro. rewrite aux8 in H2.
-        ++ rewrite Z.div_mul in H2. replace (n / a ^ fst (repeated_div a n)) with (snd (repeated_div a n)) in H2.
-           -- apply repeated_div_thm2 in H2; auto.
-           -- rewrite repeated_div_thm0 with (n:=n) (f:=a) at 2; auto. rewrite Z.mul_comm. rewrite Z.div_mul; auto.
-              apply Z.pow_nonzero; try lia. apply repeated_div_thm5; auto.
-           -- apply Z.pow_nonzero; try lia. apply repeated_div_thm5; auto.
-        ++ rewrite repeated_div_thm0 with (n:=n) (f:=a) at 1; auto. rewrite Z.mul_comm. rewrite Z.div_mul; auto.
-           -- apply repeated_div_thm1; auto.
-           -- apply Z.pow_nonzero; try lia. apply repeated_div_thm5; auto.
-        ++ assert (0 < b ^ fst (repeated_div b n)).
-           { apply Z.pow_pos_nonneg; try lia. apply repeated_div_thm5; auto. }
-           lia.
-        ++ clear H2. rewrite H1 at 2. rewrite <- aux8.
-           -- exists (n / a ^ fst (repeated_div a n) / b ^ fst (repeated_div b n) * a ^ fst (repeated_div a n) / a ^ fst (repeated_div a n)).
-              ring.
-           -- rewrite aux7; auto.
-              ** rewrite aux8.
-                 +++ rewrite Z.div_mul.
-                     --- replace n with (b ^ fst (repeated_div b n) * snd (repeated_div b n)) at 1.
-                         *** rewrite Z.mul_comm. rewrite Z.div_mul.
-                             ++++ apply repeated_div_thm1; auto.
-                             ++++ apply Z.pow_nonzero; try lia. apply repeated_div_thm5; auto.
-                         *** rewrite <- repeated_div_thm0; auto.
-                     --- apply Z.pow_nonzero; try lia. apply repeated_div_thm5; auto.
-                 +++ replace n with (b ^ fst (repeated_div b n) * snd (repeated_div b n)) at 1.
-                     --- rewrite Z.mul_comm. rewrite Z.div_mul.
-                         *** apply repeated_div_thm1; auto.
-                         *** apply Z.pow_nonzero; try lia. apply repeated_div_thm5; auto.
-                     --- rewrite <- repeated_div_thm0; auto.
-                 +++ assert (0 < a ^ fst (repeated_div a n)).
-                     { apply Z.pow_pos_nonneg; try lia. apply repeated_div_thm5; auto. }
-                     lia.
-                 +++ rewrite H1 at 2. rewrite Z.div_mul; auto.
-                     --- exists (n / a ^ fst (repeated_div a n) / b ^ fst (repeated_div b n)). ring.
-                     --- apply Z.pow_nonzero; try lia. apply repeated_div_thm5; auto.
-              ** apply Zpow_facts.rel_prime_Zpower; auto.
-                 +++ apply repeated_div_thm5; auto.
-                 +++ apply repeated_div_thm5; auto.
-              ** exists (snd (repeated_div a n)). rewrite Z.mul_comm. apply repeated_div_thm0; auto.
-              ** exists (snd (repeated_div b n)). rewrite Z.mul_comm. apply repeated_div_thm0; auto.
-              ** apply Z.pow_pos_nonneg; try lia. apply repeated_div_thm5; auto.
-              ** apply Z.pow_pos_nonneg; try lia. apply repeated_div_thm5; auto.
-           -- assert (0 < a ^ fst (repeated_div a n)).
-              { apply Z.pow_pos_nonneg; try lia. apply repeated_div_thm5; auto. }
-              lia.
-           -- exists (n / a ^ fst (repeated_div a n) / b ^ fst (repeated_div b n)). ring.
-      * apply repeated_div_thm5; auto.
-    - intro. rewrite aux7 in H2; auto.
-      * apply aux9 in H2; auto.
-        ++ replace (n / a ^ fst (repeated_div a n)) with (snd (repeated_div a n)) in H2.
-           -- apply repeated_div_thm2 in H2; auto.
-           -- rewrite repeated_div_thm0 with (n:=n) (f:=a) at 2; auto.
-              rewrite Z.mul_comm. rewrite Z.div_mul; auto. apply Z.pow_nonzero; try lia. apply repeated_div_thm5; auto.
-        ++ apply rel_prime_sym. auto.
-        ++ apply repeated_div_thm5; auto.
-        ++ apply repeated_div_thm5; auto.
-        ++ exists (snd (repeated_div b n)). rewrite Z.mul_comm. rewrite <- repeated_div_thm0; auto.
-        ++ exists (snd (repeated_div a n)). rewrite Z.mul_comm. rewrite <- repeated_div_thm0; auto.
-      * apply Zpow_facts.rel_prime_Zpower; auto.
-        ++ apply repeated_div_thm5; auto.
-        ++ apply repeated_div_thm5; auto.
-      * exists (snd (repeated_div a n)). rewrite Z.mul_comm. rewrite <- repeated_div_thm0; auto.
-      * exists (snd (repeated_div b n)). rewrite Z.mul_comm. rewrite <- repeated_div_thm0; auto.
-      * apply Z.pow_pos_nonneg; try lia. apply repeated_div_thm5; auto.
-      * apply Z.pow_pos_nonneg; try lia. apply repeated_div_thm5; auto.
-    - apply repeated_div_thm5; auto.
-  + intro. rewrite aux7 in H2; auto.
-    - rewrite aux8 in H2.
-      * rewrite Z.div_mul in H2.
-        ++ replace n with (b ^ fst (repeated_div b n) * snd (repeated_div b n)) in H2 at 1.
-           -- rewrite Z.mul_comm in H2. rewrite Z.div_mul in H2.
-              ** apply repeated_div_thm2 in H2; auto.
-              ** apply Z.pow_nonzero; try lia. apply repeated_div_thm5; auto.
-           -- rewrite <- repeated_div_thm0; auto.
-        ++ apply Z.pow_nonzero; try lia. apply repeated_div_thm5; auto.
-      * replace n with (b ^ fst (repeated_div b n) * snd (repeated_div b n)) at 1.
-        ++ rewrite Z.mul_comm. rewrite Z.div_mul.
-           -- apply repeated_div_thm1; auto.
-           -- apply Z.pow_nonzero; try lia. apply repeated_div_thm5; auto.
-        ++ rewrite <- repeated_div_thm0; auto.
-      * assert (0 < a ^ fst (repeated_div a n)).
-        { apply Z.pow_pos_nonneg; try lia. apply repeated_div_thm5; auto. }
-        lia.
-      * rewrite H1 at 2. rewrite Z.div_mul.
-        ++ exists (n / a ^ fst (repeated_div a n) / b ^ fst (repeated_div b n)). ring.
-        ++ apply Z.pow_nonzero; try lia. apply repeated_div_thm5; auto.
-    - apply Zpow_facts.rel_prime_Zpower; auto.
-      * apply repeated_div_thm5; auto.
-      * apply repeated_div_thm5; auto.
-    - exists (snd (repeated_div a n)). rewrite Z.mul_comm. rewrite <- repeated_div_thm0; auto.
-    - exists (snd (repeated_div b n)). rewrite Z.mul_comm. rewrite <- repeated_div_thm0; auto.
-    - apply Z.pow_pos_nonneg; try lia. apply repeated_div_thm5; auto.
-    - apply Z.pow_pos_nonneg; try lia. apply repeated_div_thm5; auto.
-  + apply repeated_div_thm5; auto.
-Admitted.
-
+  pose proof repeated_div_thm0.
+  assert (forall N a, 2 <= a -> 1 <= N -> snd (repeated_div a N) = N / a ^ fst (repeated_div a N)).
+  { intros. rewrite (H1 a0 N H2 H3) at 2. rewrite Z.mul_comm, Z.div_mul; auto.
+    apply Z.pow_nonzero; try lia. apply repeated_div_thm5; auto. }
+  pose proof repeated_div_thm1.
+  pose proof (H2 (snd (repeated_div b n)) a Ha (proj1 (H3 n H b Hb))).
+  pose proof (H2 (snd (repeated_div a n)) b Hb (proj1 (H3 n H a Ha))).
+  rewrite H4. rewrite H5. pose proof (rel_prime_sym a b H0).
+  rewrite aux2; auto. rewrite aux2; auto.
+  apply aux12; auto.
+  + apply repeated_div_thm1; auto.
+  + assert (0 < a ^ fst (repeated_div a n)). { apply Z.pow_pos_nonneg; try lia. apply repeated_div_thm5; auto. } lia.
+  + apply repeated_div_thm1; auto.
+  + assert (0 < b ^ fst (repeated_div b n)). { apply Z.pow_pos_nonneg; try lia. apply repeated_div_thm5; auto. } lia.
+  + apply aux11; auto; try lia.
+  + apply aux11; auto; try lia.
+  + rewrite <- H1; auto. rewrite Z.mul_comm. rewrite <- H1; auto.
+Qed.
 
 Lemma find_proof: semax_body Vprog Gprog f_find find_spec.
 Proof.
@@ -1012,7 +900,6 @@ Proof.
     - assert (2 <= 2) by lia. pose proof (repeated_div_thm1 _ H1 _ H2). lia.
     - unfold new_highest. destruct Zdivide_dec; [destruct Z_le_dec |]; try lia.
   + autorewrite with norm.
-    (* ??? *)
     forward_if (if prime_dec (repeated_repeated_div 3 n H1)
                 then PROP ()
                      LOCAL (temp _n (Vlong (Int64.repr (repeated_repeated_div 3 n H1))))
