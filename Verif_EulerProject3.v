@@ -810,9 +810,12 @@ Proof.
     apply H in H5; try lia. auto.
 Qed.
 
-Theorem aux6 n a b (H1: rel_prime a b) (H2: (a | n)) (H3: (b | n)): (a * b | n).
+Theorem aux6 n a b (H1: rel_prime a b) (H2: (a | n)) (H3: (b | n)): 0 < a -> 0 < b -> (a * b | n).
 Proof.
-Admitted.
+  intros. assert (b | n / a). { apply different_Gauss; auto. apply rel_prime_sym. auto. }
+  destruct H4. exists x. replace (x * (a * b)) with (x * b * a) by ring. rewrite <- H4.
+  destruct H2. subst. rewrite Z.div_mul; auto. lia.
+Qed.
 
 Theorem aux7 n (Hn: 1 <= n) a b (H1: rel_prime a b) (H2: (a | n)) (H3: (b | n)): n / a / b = n / b / a.
 Proof.
