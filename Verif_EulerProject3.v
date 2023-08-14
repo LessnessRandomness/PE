@@ -32,12 +32,12 @@ Function repeated_repeated_div (i n: Z) (H: 1 <= n) { measure Z.to_nat i }: Z :=
   else snd (repeated_div i (repeated_repeated_div (i - 1) _ H)).
 Proof. lia. Defined.
 
-Function prime_divisor_list (i n: Z) (H: 1 <= n) { measure Z.to_nat i}: list Z :=
+Function prime_divisor_list (i n: Z) (H: 1 <= n) { measure Z.to_nat i}: list (Z * Z) :=
   let W := prime_divisor_list (i - 1) n H in
   if Z_le_dec i 1
   then []
   else if Zdivide_dec i (repeated_repeated_div (i - 1) n H)
-       then cons i W
+       then cons (i, fst (repeated_div i (repeated_repeated_div (i - 1) n H))) W
        else W.
 Proof.
   lia. lia.
@@ -626,7 +626,7 @@ Qed.
 Definition value_of_highest i n (H: 1 <= n) :=
   match prime_divisor_list i n H with
   | nil => 1
-  | x :: _ => x
+  | (x, p) :: _ => x
   end.
 
 Theorem value_of_highest_thm0 i n (H: 1 <= n) (H0: 2 <= i): 1 <= value_of_highest i n H.
@@ -665,10 +665,9 @@ Proof.
 Qed.
 
 Theorem brute_force_and_prime_divisor_list_thm i n (H: 1 <= n) (H0: 2 <= i):
-  max_of_list 1 (filter prime_dec (filter (fun x => Zdivide_dec x n) (Zseq i))) =
-  match prime_divisor_list i n H with [] => 1 | cons x t => x end.
+  max_of_list 1 (filter prime_dec (filter (fun x => Zdivide_dec x n) (Zseq i))) = value_of_highest i n H.
 Proof.
-  assert (0 <= i) by lia. revert H0. pattern i. apply Z_lt_induction; auto; intros. clear H1 i.
+  unfold value_of_highest. assert (0 <= i) by lia. revert H0. pattern i. apply Z_lt_induction; auto; intros. clear H1 i.
   assert (x = 2 \/ 2 <= x - 1) by lia. destruct H1.
   + subst. simpl. rewrite prime_divisor_list_equation. rewrite prime_divisor_list_equation. destruct Zdivide_dec.
     - simpl. destruct Zdivide_dec.
@@ -705,6 +704,12 @@ Theorem brute_force_and_all_prime_divisors_equiv n (H: 2 <= n):
 Proof.
   apply brute_force_and_prime_divisor_list_thm; auto.
 Qed.
+
+Fixpoint product (L: list (Z * Z)) :=
+  match L with
+  | nil => 1
+  | cons (x, p) t => x ^ p * product t
+  end.
 
 Theorem aux0 n (H: 1 <= n) a b (Ha: 2 <= a) (Hb: 2 <= b) (H0: rel_prime a b):
   fst (repeated_div b n) = fst (repeated_div b (n * a)).
@@ -1034,3 +1039,4 @@ Proof.
       * admit.
       * admit.
 Admitted.
+
