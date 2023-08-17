@@ -71,7 +71,7 @@ Proof.
   pose proof (H _ H0 H1). do 2 destruct repeated_div'. inversion HeqW; inversion H2; subst. simpl in *. lia.
 Qed.
 
-Theorem repeated_div_thm0 f n (H: 2 <= f) (H': 1 <= n): n = f ^ fst (repeated_div f n) * snd (repeated_div f n).
+Theorem repeated_div_thm0 f n (H: 1 <= f) (H': 1 <= n): n = f ^ fst (repeated_div f n) * snd (repeated_div f n).
 Proof.
   unfold repeated_div. repeat destruct Z_le_dec. clear H H'. assert (0 <= n) by lia. revert l0.
   pattern n. apply Z_lt_induction; auto. clear H. intros.
@@ -94,31 +94,33 @@ Proof.
   + simpl (fst (0, n)). simpl (snd (0, n)). lia.
 Qed.
 
-Lemma repeated_div_thm1 (n: Z) (H: 1 <= n) f (H0: 2 <= f): 1 <= snd (repeated_div f n) <= n.
+Lemma repeated_div_thm1 (n: Z) (H: 1 <= n) f (H0: 1 <= f): 1 <= snd (repeated_div f n) <= n.
 Proof.
-  split.
-  + unfold repeated_div. repeat destruct Z_le_dec; try lia. assert (0 <= n) by lia. revert l0. 
-    pattern n. apply Z_lt_induction; auto. clear H H1. intros.
-    rewrite repeated_div'_equation. destruct Zdivide_dec.
-    - assert (snd (let (i, k) := repeated_div' f l (x / f) (repeated_div'_aux f l x l0 d) in (i + 1, k)) =
-              snd (repeated_div' f l (x / f) (repeated_div'_aux f l x l0 d))).
-      { destruct repeated_div'. simpl. auto. }
-      rewrite H1; clear H1. destruct d. apply H. subst.
-      rewrite Z_div_mult; try lia. nia.
-    - simpl. auto.
-  + unfold repeated_div. repeat destruct Z_le_dec; try lia. assert (0 <= n) by lia. revert l0.
-    pattern n. apply Z_lt_induction; auto. clear H H1. intros.
-    rewrite repeated_div'_equation. destruct Zdivide_dec.
-    - assert (snd (let (i, k) := repeated_div' f l (x / f) (repeated_div'_aux f l x l0 d) in (i + 1, k)) =
-              snd (repeated_div' f l (x / f) (repeated_div'_aux f l x l0 d))).
-      { destruct repeated_div'. simpl. auto. }
-      rewrite H1; clear H1. destruct d. subst.
-      assert (0 <= x0 < x0 * f) by nia. assert (1 <= x0) by lia. pose (H _ H1 H2).
-      assert (repeated_div' f l x0 H2 =
-              repeated_div' f l (x0 * f / f) (repeated_div'_aux f l (x0 * f) l0 (ex_intro (fun z : Z => x0 * f = z * f) x0 eq_refl))).
-      { apply repeated_div'_thm0. rewrite Z_div_mult; try lia. }
-      rewrite <- H3. nia.
-    - simpl. lia.
+  assert (f = 1 \/ 2 <= f) by lia. destruct H1.
+  + subst. simpl. lia.
+  + split.
+    - unfold repeated_div. repeat destruct Z_le_dec; try lia. assert (0 <= n) by lia. revert l0. 
+      pattern n. apply Z_lt_induction; auto. clear H H1. intros.
+      rewrite repeated_div'_equation. destruct Zdivide_dec.
+      * assert (snd (let (i, k) := repeated_div' f l (x / f) (repeated_div'_aux f l x l0 d) in (i + 1, k)) =
+                snd (repeated_div' f l (x / f) (repeated_div'_aux f l x l0 d))).
+        { destruct repeated_div'. simpl. auto. }
+        rewrite H1; clear H1. destruct d. apply H. subst.
+        rewrite Z_div_mult; try lia. nia.
+      * simpl. auto.
+    - unfold repeated_div. repeat destruct Z_le_dec; try lia. assert (0 <= n) by lia. revert l0.
+      pattern n. apply Z_lt_induction; auto. clear H H1. intros.
+      rewrite repeated_div'_equation. destruct Zdivide_dec.
+      * assert (snd (let (i, k) := repeated_div' f l (x / f) (repeated_div'_aux f l x l0 d) in (i + 1, k)) =
+                snd (repeated_div' f l (x / f) (repeated_div'_aux f l x l0 d))).
+        { destruct repeated_div'. simpl. auto. }
+        rewrite H1; clear H1. destruct d. subst.
+        assert (0 <= x0 < x0 * f) by nia. assert (1 <= x0) by lia. pose (H _ H1 H3).
+        assert (repeated_div' f l x0 H3 =
+                repeated_div' f l (x0 * f / f) (repeated_div'_aux f l (x0 * f) l0 (ex_intro (fun z : Z => x0 * f = z * f) x0 eq_refl))).
+        { apply repeated_div'_thm0. rewrite Z_div_mult; try lia. }
+        rewrite <- H4. nia.
+      * simpl. lia.
 Qed.
 
 Theorem repeated_repeated_div_thm0 (i n: Z) (H: 1 <= n): 1 <= repeated_repeated_div i n H.
@@ -155,12 +157,12 @@ Proof.
   apply repeated_div_thm2 in H1; auto. apply repeated_repeated_div_thm0.
 Qed.
 
-Theorem repeated_div_thm3 f n (H: 2 <= f) (H0: 1 <= n): Z.divide (snd (repeated_div f n)) n.
+Theorem repeated_div_thm3 f n (H: 1 <= f) (H0: 1 <= n): Z.divide (snd (repeated_div f n)) n.
 Proof.
   exists (f ^ fst (repeated_div f n)). apply repeated_div_thm0; auto.
 Qed.
 
-Theorem repeated_repeated_div_thm2 (i n w: Z) (H: 1 <= n) (H0: 2 <= i) (H1: 0 <= w):
+Theorem repeated_repeated_div_thm2 (i n w: Z) (H: 1 <= n) (H0: 1 <= i) (H1: 0 <= w):
   forall i, 2 <= i <= i + w -> (i | repeated_repeated_div (i + w) n H) -> False.
 Proof.
   pattern w. apply Z_lt_induction; auto; intros. clear H1 w.
@@ -169,7 +171,7 @@ Proof.
   + rewrite repeated_repeated_div_equation in H4. destruct Z_le_dec in H4; try lia.
     assert (0 <= x - 1 < x) by lia. assert (2 <= i0 <= i0 + (x - 1)) by lia.
     pose proof (H2 _ H5 _ H6). ring_simplify (i0 + (x - 1)) in H7.
-    assert (2 <= i0 + x) by lia.
+    assert (1 <= i0 + x) by lia.
     assert (1 <= repeated_repeated_div (i0 + x - 1) n H) by apply (repeated_repeated_div_thm0).
     pose proof (repeated_div_thm3 _ _ H8 H9). apply H7.
     eapply Z.divide_trans; eauto.
@@ -182,7 +184,7 @@ Proof.
   eapply repeated_repeated_div_thm2 in H2; eauto. lia. lia.
 Qed.
 
-Theorem repeated_repeated_div_thm4 (i n x: Z) (H: 1 <= n) (H0: 2 <= i) (H1: 2 <= x):
+Theorem repeated_repeated_div_thm4 (i n x: Z) (H: 1 <= n) (H0: 1 <= i) (H1: 2 <= x):
   Z.divide x (repeated_repeated_div i n H) -> Z.divide x n.
 Proof.
   assert (0 <= i) by lia. revert H0. pattern i. apply Z_lt_induction; auto; intros. clear H2 i.
@@ -192,20 +194,20 @@ Proof.
     rewrite Zmult_comm. rewrite Zmult_assoc. rewrite (Zmult_comm x). rewrite <- H2.
     rewrite Zmult_comm. rewrite <- repeated_div_thm0; try lia.
     apply repeated_repeated_div_thm0. }
-  assert (x0 = 2 \/ 2 <= x0 - 1) by lia. destruct H5.
+  assert (x0 = 1 \/ 1 <= x0 - 1) by lia. destruct H5.
   + subst. simpl in *. rewrite repeated_repeated_div_equation in H2.
-    destruct Z_le_dec in H2; try lia. auto.
+    destruct Z_le_dec in H2; try lia.
   + apply H0 in H2; auto. lia.
 Qed.
 
-Theorem repeated_repeated_div_thm5 (i n: Z) (H: 1 <= n) (H0: 2 <= i):
+Theorem repeated_repeated_div_thm5 (i n: Z) (H: 1 <= n) (H0: 1 <= i):
   Z.divide (i + 1) (repeated_repeated_div i n H) -> prime (i + 1) /\ Z.divide (i + 1) n.
 Proof.
   intros. split.
   + destruct (prime_dec (i + 1)); auto. exfalso. apply not_prime_divide in n0; try lia.
     destruct n0 as [k [H2 H3]]. destruct H3. assert (Z.divide k (repeated_repeated_div i n H)).
     { destruct H1. exists (x0 * x). lia. }
-    apply repeated_repeated_div_thm3 in H4; auto. lia.
+    apply repeated_repeated_div_thm3 in H4; auto. lia. lia.
   + eapply repeated_repeated_div_thm4; eauto. lia.
 Qed.
 
@@ -225,29 +227,26 @@ Proof.
   rewrite <- H2. pose proof (repeated_div'_thm1 f (n / f) Hf H1). destruct repeated_div'. simpl in *. lia.
 Qed.
 
-Theorem repeated_div_thm4 a b n (H: 1 <= n) (Ha: 2 <= a) (Hb: 2 <= b):
+Theorem repeated_div_thm4 a b n (H: 1 <= n) (Ha: 1 <= a) (Hb: 1 <= b):
   rel_prime a b -> Z.divide a n -> Z.divide b n -> Z.divide a (snd (repeated_div b n)).
 Proof.
-  intros. assert (1 <= fst (repeated_div b n)).
-  { unfold repeated_div. repeat destruct Z_le_dec; try lia. apply repeated_div'_thm2; auto. }
-  assert (rel_prime a (b ^ fst (repeated_div b n))).
-  { remember (fst (repeated_div b n)) as W. assert (0 <= W) by lia. revert H3.
-    pattern W. apply Z_lt_induction; auto; intros.
-    assert (x = 1 \/ 1 <= x - 1) by lia. destruct H6.
-    + subst. replace (b ^ 1) with b by lia. auto.
-    + replace x with ((x - 1) + 1) by ring. rewrite Z.pow_add_r; try lia. replace (b ^ 1) with b by lia.
-      apply rel_prime_mult.
-      - apply H3. lia. auto.
-      - auto. }
-  replace (snd (repeated_div b n)) with (n / b ^ fst (repeated_div b n)).
-  + apply different_Gauss; try lia. auto. auto. rewrite repeated_div_thm0 with (f:=b) (n:=n) at 2; auto.
-    exists (snd (repeated_div b n)). ring.
-  + rewrite repeated_div_thm0 with (f:=b) (n:=n) at 1; auto. rewrite Zmult_comm. rewrite Z_div_mult; auto.
-    assert (0 < b ^ fst (repeated_div b n)). { apply Z.pow_pos_nonneg; try lia. }
-    lia.
+  intros. assert (a = 1 \/ 2 <= a) by lia. destruct H3.
+  + exists (snd (repeated_div b n)). subst. ring.
+  + assert (b = 1 \/ 2 <= b) by lia. destruct H4.
+    - subst. simpl. auto.
+    - assert (1 <= fst (repeated_div b n)).
+      { unfold repeated_div. repeat destruct Z_le_dec; try lia. apply repeated_div'_thm2; auto. }
+      assert (rel_prime a (b ^ fst (repeated_div b n))).
+      { apply Zpow_facts.rel_prime_Zpower_r. lia. auto. }
+      replace (snd (repeated_div b n)) with (n / b ^ fst (repeated_div b n)).
+      * apply different_Gauss; try lia. auto. auto. rewrite repeated_div_thm0 with (f:=b) (n:=n) at 2; auto.
+        exists (snd (repeated_div b n)). ring.
+      * rewrite repeated_div_thm0 with (f:=b) (n:=n) at 1; auto. rewrite Zmult_comm. rewrite Z_div_mult; auto.
+        assert (0 < b ^ fst (repeated_div b n)). { apply Z.pow_pos_nonneg; try lia. }
+        lia.
 Qed.
 
-Theorem repeated_repeated_div_thm6 (i n: Z) (H: 1 <= n) (H0: 2 <= i):
+Theorem repeated_repeated_div_thm6 (i n: Z) (H: 1 <= n) (H0: 1 <= i):
   prime (i + 1) -> Z.divide (i + 1) n -> Z.divide (i + 1) (repeated_repeated_div i n H).
 Proof.
   intros. destruct H1. remember (i + 1) as W. assert (0 <= i) by lia. assert (i < W) by lia.
@@ -257,8 +256,9 @@ Proof.
     assert (W | repeated_repeated_div (x - 1) n H).
     { apply H5. lia. lia. }
     destruct H8. remember (repeated_repeated_div (x - 1) n H) as X.
-    eapply Gauss. exists x0. rewrite <- H8. rewrite repeated_div_thm0 with (f := x); eauto.
-    - rewrite HeqX. apply repeated_repeated_div_thm0.
+    eapply Gauss.
+    - exists x0. rewrite <- H8. rewrite repeated_div_thm0 with (f := x); eauto; try lia.
+      subst. apply repeated_repeated_div_thm0.
     - apply Zpow_facts.rel_prime_Zpower_r.
       * unfold repeated_div. repeat destruct Z_le_dec; try lia.
         ++ apply repeated_div'_thm1.
@@ -267,7 +267,7 @@ Proof.
   + rewrite repeated_repeated_div_equation. destruct Z_le_dec; try lia. auto.
 Qed.
 
-Theorem repeated_repeated_div_main_thm (i n: Z) (H: 1 <= n) (H0: 2 <= i):
+Theorem repeated_repeated_div_main_thm (i n: Z) (H: 1 <= n) (H0: 1 <= i):
   Z.divide (i + 1) (repeated_repeated_div i n H) <-> prime (i + 1) /\ Z.divide (i + 1) n.
 Proof.
   split.
@@ -629,22 +629,20 @@ Definition value_of_highest i n (H: 1 <= n) :=
   | (x, p) :: _ => x
   end.
 
-Theorem value_of_highest_thm0 i n (H: 1 <= n) (H0: 2 <= i): 1 <= value_of_highest i n H.
+Theorem value_of_highest_thm0 i n (H: 1 <= n) (H0: 1 <= i): 1 <= value_of_highest i n H.
 Proof.
   assert (0 <= i) by lia. revert H0. pattern i. apply Z_lt_induction; auto; intros.
-  assert (x = 2 \/ 2 <= x - 1) by lia. destruct H3.
-  + subst. unfold value_of_highest. rewrite prime_divisor_list_equation. destruct Z_le_dec; try lia.
-    destruct Zdivide_dec; try lia. simpl in *. lia.
+  assert (x = 1 \/ 1 <= x - 1) by lia. destruct H3.
+  + subst. unfold value_of_highest. simpl. lia.
   + unfold value_of_highest in *. rewrite prime_divisor_list_equation. destruct Z_le_dec; try lia.
     destruct Zdivide_dec; try lia. apply H0; try lia.
 Qed.
 
-Theorem value_of_highest_thm1 i n (H: 1 <= n) (H0: 2 <= i): value_of_highest i n H <= i.
+Theorem value_of_highest_thm1 i n (H: 1 <= n) (H0: 1 <= i): value_of_highest i n H <= i.
 Proof.
   assert (0 <= i) by lia. revert H0. pattern i. apply Z_lt_induction; auto; intros.
-  assert (x = 2 \/ 2 <= x - 1) by lia. destruct H3.
+  assert (x = 1 \/ 1 <= x - 1) by lia. destruct H3.
   + subst. unfold value_of_highest. rewrite prime_divisor_list_equation. destruct Z_le_dec; try lia.
-    destruct Zdivide_dec; try lia. simpl in *. lia.
   + unfold value_of_highest in *. rewrite prime_divisor_list_equation. destruct Z_le_dec; try lia.
     destruct Zdivide_dec; try lia. pose proof (H0 (x - 1) ltac:(lia) ltac:(lia)). lia.
 Qed.
@@ -664,22 +662,14 @@ Proof.
     - intros. simpl in H0. assert (a = w \/ In w L) by auto. apply H0 in H2. auto.
 Qed.
 
-Theorem brute_force_and_prime_divisor_list_thm i n (H: 1 <= n) (H0: 2 <= i):
+Theorem brute_force_and_prime_divisor_list_thm i n (H: 1 <= n) (H0: 1 <= i):
   max_of_list 1 (filter prime_dec (filter (fun x => Zdivide_dec x n) (Zseq i))) = value_of_highest i n H.
 Proof.
   unfold value_of_highest. assert (0 <= i) by lia. revert H0. pattern i. apply Z_lt_induction; auto; intros. clear H1 i.
-  assert (x = 2 \/ 2 <= x - 1) by lia. destruct H1.
-  + subst. simpl. rewrite prime_divisor_list_equation. rewrite prime_divisor_list_equation. destruct Zdivide_dec.
-    - simpl. destruct Zdivide_dec.
-      * simpl. destruct prime_dec.
-        ++ simpl. auto.
-        ++ simpl. pose proof prime_2. tauto.
-      * simpl. auto.
-    - simpl. destruct Zdivide_dec.
-      * simpl. destruct prime_dec.
-        ++ simpl. auto.
-        ++ simpl. pose proof prime_2. tauto.
-      * simpl. auto.
+  assert (x = 1 \/ 1 <= x - 1) by lia. destruct H1.
+  + subst. simpl. destruct Zdivide_dec.
+    - simpl. auto.
+    - simpl. auto.
   + assert (0 <= x - 1 < x) by lia. pose proof (H0 _ H3 H1). rewrite Zseq_equation. destruct Z_le_dec; try lia.
     rewrite filter_app. rewrite filter_app. rewrite prime_divisor_list_equation. destruct Z_le_dec; try lia.
     simpl. destruct (Zdivide_dec x n).
@@ -688,7 +678,7 @@ Proof.
         ++ apply max_In_thm0; try lia. intros. apply filter_In in H5. destruct H5. apply filter_In in H5.
            destruct H5. apply Zseq_thm in H5. lia.
         ++ exfalso. apply n2; clear n2. replace x with ((x - 1) + 1) at 1 by ring.
-           apply repeated_repeated_div_main_thm; try lia. ring_simplify (x - 1 + 1). auto.
+           rewrite repeated_repeated_div_main_thm; try lia. ring_simplify (x - 1 + 1). auto.
       * simpl. destruct Zdivide_dec.
         ++ exfalso. apply n2; clear n2. replace x with (x - 1 + 1) in d0 at 1 by ring.
            rewrite repeated_repeated_div_main_thm in d0; try lia. ring_simplify (x - 1 + 1) in d0. tauto.
@@ -699,8 +689,8 @@ Proof.
       * auto.
 Qed.
 
-Theorem brute_force_and_all_prime_divisors_equiv n (H: 2 <= n):
-  brute_force n = value_of_highest n n ltac:(lia).
+Theorem brute_force_and_all_prime_divisors_equiv n (H: 1 <= n) (H1: 1 <= n):
+  brute_force n = value_of_highest n n H1.
 Proof.
   apply brute_force_and_prime_divisor_list_thm; auto.
 Qed.
@@ -711,7 +701,7 @@ Fixpoint product (L: list (Z * Z)) :=
   | cons (x, p) t => x ^ p * product t
   end.
 
-Theorem aux0 n (H: 1 <= n) a b (Ha: 2 <= a) (Hb: 2 <= b) (H0: rel_prime a b):
+Theorem aux0 n (H: 1 <= n) a b (Ha: 1 <= a) (Hb: 1 <= b) (H0: rel_prime a b):
   fst (repeated_div b n) = fst (repeated_div b (n * a)).
 Proof.
   assert (0 <= n) by lia. revert H. pattern n. apply Z_lt_induction; auto; intros.
@@ -739,9 +729,10 @@ Proof.
   + destruct Zdivide_dec.
     - exfalso. apply n0. rewrite Z.mul_comm in d. apply rel_prime_sym in H0. eapply Gauss; eauto.
     - simpl. auto.
+  + auto.
 Qed.
 
-Theorem aux1 n (H: 1 <= n) a b (Ha: 2 <= a) (Hb: 2 <= b) (H0: rel_prime a b) i (Hi: 0 <= i):
+Theorem aux1 n (H: 1 <= n) a b (Ha: 1 <= a) (Hb: 1 <= b) (H0: rel_prime a b) i (Hi: 0 <= i):
   fst (repeated_div b n) = fst (repeated_div b (n * a ^ i)).
 Proof.
   pose proof Hi. revert H1. pattern i. apply Z_lt_induction; auto; intros. assert (x = 0 \/ 1 <= x) by lia. destruct H3.
@@ -750,7 +741,7 @@ Proof.
     rewrite Z.mul_assoc. rewrite <- aux0; try lia; auto. apply H1; try lia.
 Qed.
 
-Theorem repeated_div_thm5 n (H: 1 <= n) a (Ha: 2 <= a): 0 <= fst (repeated_div a n).
+Theorem repeated_div_thm5 n (H: 1 <= n) a (Ha: 1 <= a): 0 <= fst (repeated_div a n).
 Proof.
   assert (0 <= n) by lia. revert H. pattern n. apply Z_lt_induction; auto; intros.
   unfold repeated_div in *. destruct Z_le_dec; try lia. destruct Z_le_dec; try lia.
@@ -767,9 +758,10 @@ Proof.
     { erewrite repeated_div'_thm0; eauto. rewrite Z.div_mul; try lia. }
     rewrite H5. lia.
   + simpl. lia.
+  + simpl. lia.
 Qed.
 
-Theorem aux2 n (H: 1 <= n) a b (Ha: 2 <= a) (Hb: 2 <= b) (H0: rel_prime a b):
+Theorem aux2 n (H: 1 <= n) a b (Ha: 1 <= a) (Hb: 1 <= b) (H0: rel_prime a b):
   fst (repeated_div a (snd (repeated_div b n))) = fst (repeated_div a n).
 Proof.
   assert (n = b ^ fst (repeated_div b n) * snd (repeated_div b n)) by (apply repeated_div_thm0; auto).
@@ -854,7 +846,7 @@ Proof.
   rewrite Z.div_mul in H1; auto. rewrite Z.div_mul in H1; auto.
 Qed.
 
-Theorem aux11 n (H: 1 <= n) a b (Ha: 2 <= a) (Hb: 2 <= b) (H0: rel_prime a b):
+Theorem aux11 n (H: 1 <= n) a b (Ha: 1 <= a) (Hb: 1 <= b) (H0: rel_prime a b):
   (a ^ fst (repeated_div a n) | snd (repeated_div b n)).
 Proof.
   assert (a ^ fst (repeated_div a n) | snd (repeated_div b n) * b ^ fst (repeated_div b n)).
@@ -875,11 +867,11 @@ Proof.
   rewrite (Z.mul_comm b). rewrite Z.mul_assoc. rewrite aux8; try lia; auto. rewrite Z.div_mul; try lia; auto.
 Qed.
 
-Theorem repeated_div_thm6 n (H: 1 <= n) a b (Ha: 2 <= a) (Hb: 2 <= b) (H0: rel_prime a b):
+Theorem repeated_div_thm6 n (H: 1 <= n) a b (Ha: 1 <= a) (Hb: 1 <= b) (H0: rel_prime a b):
   snd (repeated_div a (snd (repeated_div b n))) = snd (repeated_div b (snd (repeated_div a n))).
 Proof.
   pose proof repeated_div_thm0.
-  assert (forall N a, 2 <= a -> 1 <= N -> snd (repeated_div a N) = N / a ^ fst (repeated_div a N)).
+  assert (forall N a, 1 <= a -> 1 <= N -> snd (repeated_div a N) = N / a ^ fst (repeated_div a N)).
   { intros. rewrite (H1 a0 N H2 H3) at 2. rewrite Z.mul_comm, Z.div_mul; auto.
     apply Z.pow_nonzero; try lia. apply repeated_div_thm5; auto. }
   pose proof repeated_div_thm1.
@@ -897,146 +889,52 @@ Proof.
   + rewrite <- H1; auto. rewrite Z.mul_comm. rewrite <- H1; auto.
 Qed.
 
+Theorem brute_force_thm1 n (H: 1 <= n): 1 <= brute_force n <= n.
+Proof.
+Admitted.
+
+Definition value_of_second_highest n (H: 1 <= n) :=
+  match prime_divisor_list n n H with
+  | cons x (cons y t) => fst y
+  | _ => 1
+  end.
+
 Lemma find_proof: semax_body Vprog Gprog f_find find_spec.
 Proof.
   start_function. assert (Int64.max_unsigned = 18446744073709551615) as HH by auto.
   assert (1 <= n) by lia. forward. forward_call. forward_call.
   + split.
-    - assert (2 <= 2) by lia. pose proof (repeated_div_thm1 _ H1 _ H2). lia.
+    - assert (1 <= 2) by lia. pose proof (repeated_div_thm1 _ H1 _ H2). lia.
     - unfold new_highest. destruct Zdivide_dec; [destruct Z_le_dec |]; try lia.
   + autorewrite with norm.
-    forward_if (if prime_dec (repeated_repeated_div 3 n H1)
-                then PROP ()
-                     LOCAL (temp _n (Vlong (Int64.repr (repeated_repeated_div 3 n H1))))
-                     SEP (data_at Ews tulong (Vlong (Int64.repr (value_of_highest 3 n H1))) (gv _highest))
-                else PROP ()
-                     LOCAL (temp _n (Vlong (Int64.repr 1)))
-                     SEP (data_at Ews tulong (Vlong (Int64.repr (brute_force n))) (gv _highest))).
-    assert (Int64.unsigned (Int64.repr 5) = 5) by reflexivity. rewrite H3 in H2. clear H3.
-    assert (Int64.unsigned (Int64.repr (snd (repeated_div 3 (snd (repeated_div 2 n))))) =
-            snd (repeated_div 3 (snd (repeated_div 2 n)))).
-    { rewrite Int64.unsigned_repr; auto.
-      assert (1 <= snd (repeated_div 2 n) <= n).
-      { apply repeated_div_thm1; try lia. }
-      assert (1 <= snd (repeated_div 3 (snd (repeated_div 2 n))) <= snd (repeated_div 2 n)).
-      { apply repeated_div_thm1; try lia. }
-      lia. }
-    rewrite H3 in H2. clear H3.
-    - (* current try of the loop invariant
-      forward_loop (
+    set (repeated_repeated_div 3 n H1) as W.
+    set ((Z.divide (brute_force W ^ 2) W) \/ (prime (brute_force W - 2) /\ Z.divide (brute_force W - 2) W)) as P.
+    assert ({P} + {~ P}).
+    { unfold P. destruct (Zdivide_dec (brute_force W ^ 2) W).
+      + left. auto.
+      + destruct (prime_dec (brute_force W - 2)).
+        - destruct (Zdivide_dec (brute_force W - 2) W).
+          * left. auto.
+          * right. tauto.
+        - tauto. }
+    - forward_if (
+      if H2
+      then PROP ()
+           LOCAL (temp _n (Vlong (Int64.repr (brute_force W))); gvars gv)
+           SEP (data_at Ews tulong (Vlong (Int64.repr (value_of_second_highest W (repeated_repeated_div_thm0 _ _ H1)))) (gv _highest))
+      else PROP ()
+           LOCAL (temp _n (Vlong (Int64.repr 1)); gvars gv)
+           SEP (data_at Ews tulong (Vlong (Int64.repr (brute_force W))) (gv _highest))).
+      * forward_loop (
         EX (i: Z),
           PROP (let W := repeated_repeated_div (6 * i + 3) n H1 in
-                0 <= i /\ if prime_dec W then (6 * i + 5) <= W else
-                           if Z.eq_dec W 1 then True else (6 * i + 5) * (6 * i + 5) <= W)
+                0 <= i /\ (W = 1 \/ (6 * i + 5) * (6 * i + 5) <= W))
           LOCAL (temp _n (Vlong (Int64.repr (repeated_repeated_div (6 * i + 3) n H1)));
                  temp _i (Vlong (Int64.repr (6 * i + 5))); gvars gv)
           SEP (data_at Ews tulong (Vlong (Int64.repr (value_of_highest (6 * i + 3) n H1))) (gv _highest))
       ).
-      *)
-      admit.
-    - rewrite Int64.unsigned_repr in H2.
-      * rewrite Int64.unsigned_repr in H2; try lia.
-        ++ forward. destruct prime_dec.
-           -- pose proof (repeated_repeated_div_thm0 3 n H1). rewrite repeated_repeated_div_equation in H3.
-              destruct Z_le_dec; try lia. simpl in H3. rewrite repeated_repeated_div_equation in H3.
-              destruct Z_le_dec; try lia. rewrite repeated_repeated_div_equation in H3. simpl in H3.
-              entailer!. unfold new_highest. destruct Zdivide_dec.
-              ** destruct Z_le_dec.
-                 +++ destruct Zdivide_dec; try lia. destruct Z_le_dec; try lia.
-                 +++ destruct Zdivide_dec.
-                     --- unfold value_of_highest. rewrite prime_divisor_list_equation.
-                         destruct Z_le_dec; try lia. destruct Zdivide_dec; auto. simpl in *.
-                         rewrite prime_divisor_list_equation. destruct Z_le_dec; try lia. simpl.
-                         destruct Zdivide_dec.
-                         *** rewrite repeated_repeated_div_equation in n4. destruct Z_le_dec; try lia. simpl in n4.
-                             rewrite repeated_repeated_div_equation in n4. destruct Z_le_dec; try lia. tauto.
-                         *** rewrite repeated_repeated_div_equation in n6. destruct Z_le_dec; try lia. tauto.
-                     --- unfold value_of_highest. rewrite prime_divisor_list_equation. destruct Z_le_dec; try lia.
-                         simpl. destruct Zdivide_dec; auto.
-                         rewrite repeated_repeated_div_equation in n5. destruct Z_le_dec; try lia. simpl in n5.
-                         rewrite repeated_repeated_div_equation in n5. destruct Z_le_dec; try lia. tauto.
-              ** destruct Zdivide_dec.
-                 +++ destruct Z_le_dec; try lia. unfold value_of_highest. rewrite prime_divisor_list_equation.
-                     destruct Z_le_dec; try lia. destruct Zdivide_dec.
-                     --- simpl in d0. rewrite repeated_repeated_div_equation in d0. destruct Z_le_dec; try lia.
-                         simpl in d0. rewrite repeated_repeated_div_equation in d0. destruct Z_le_dec; try lia.
-                         tauto.
-                     --- simpl. rewrite prime_divisor_list_equation. destruct Z_le_dec; try lia. simpl in *.
-                         destruct Zdivide_dec; auto.
-                         rewrite repeated_repeated_div_equation in n7. destruct Z_le_dec; try lia. tauto.
-                 +++ unfold value_of_highest. rewrite prime_divisor_list_equation. destruct Z_le_dec; try lia.
-                     destruct Zdivide_dec.
-                     --- simpl in d. rewrite repeated_repeated_div_equation in d.
-                         destruct Z_le_dec; try lia. simpl in d. rewrite repeated_repeated_div_equation in d.
-                         destruct Z_le_dec; try lia. tauto.
-                     --- simpl. rewrite prime_divisor_list_equation. destruct Z_le_dec; try lia.
-                         destruct Zdivide_dec.
-                         *** simpl in d. rewrite repeated_repeated_div_equation in d. destruct Z_le_dec; try lia. tauto.
-                         *** simpl. auto.
-           -- rewrite brute_force_and_all_prime_divisors_equiv with (H := proj1 H).
-              assert (1 <= snd (repeated_div 3 (snd (repeated_div 2 n)))).
-              { apply repeated_div_thm1; try lia. apply repeated_div_thm1; try lia. }
-              assert (let W := snd (repeated_div 3 (snd (repeated_div 2 n))) in W = 1 \/ W = 2 \/ W = 3 \/ W = 4) by lia.
-              assert (rel_prime 3 2).
-              { unfold rel_prime. pose proof (Zgcd_is_gcd 3 2) as H10. compute in H10. auto. }
-              destruct H4 as [H4 | [H4 | [H4 | H4]]].
-              ** clear H2 n0 H3.
-                 assert (n = 2 \/ 3 <= n) by lia. destruct H2.
-                 +++ subst. unfold new_highest. unfold value_of_highest. rewrite prime_divisor_list_equation.
-                     simpl (2 - 1). rewrite prime_divisor_list_equation. simpl (1 - 1).
-                     rewrite repeated_repeated_div_equation. destruct (Z_le_dec 1 1); try lia.
-                     simpl (snd (repeated_div 2 2)). simpl (snd (repeated_div 3 1)). destruct (Z_le_dec 2 1); try lia.
-                     destruct Zdivide_dec.
-                     --- destruct d. lia.
-                     --- destruct Zdivide_dec.
-                         *** entailer!.
-                         *** entailer!.
-                 +++ assert (forall i H, 0 <= i -> repeated_repeated_div (3 + i) n H = 1).
-                     { intros. pose proof H6. revert H7. pattern i. apply Z_lt_induction; auto; intros.
-                       assert (x = 0 \/ 1 <= x) by lia. destruct H9.
-                       + subst. simpl. rewrite repeated_repeated_div_equation. simpl.
-                         rewrite repeated_repeated_div_equation. simpl.
-                         rewrite repeated_repeated_div_equation. simpl. auto.
-                       + rewrite repeated_repeated_div_equation. destruct Z_le_dec; try lia.
-                         replace (3 + x - 1) with (3 + (x - 1)) by ring. rewrite H7; try lia.
-                         unfold repeated_div. destruct Z_le_dec; try lia. destruct Z_le_dec; try lia.
-                         rewrite repeated_div'_equation. destruct Zdivide_dec.
-                         - pose proof (Z.divide_1_r_nonneg (3 + x) ltac:(lia) d). lia.
-                         - auto. }
-                     assert (forall i H, 0 <= i -> value_of_highest (3 + i) n H = value_of_highest 3 n H).
-                     { clear h H0 HH H. intros. pose proof H0. revert H6. pattern i.
-                       apply Z_lt_induction; auto; intros. clear H0 i. assert (x = 0 \/ 1 <= x) by lia. destruct H0.
-                       + subst. auto.
-                       + unfold value_of_highest at 1. rewrite prime_divisor_list_equation. destruct Z_le_dec; try lia.
-                         destruct Zdivide_dec.
-                         - exfalso. replace (3 + x - 1) with (3 + (x - 1)) in d by ring. rewrite H3 in d; try lia.
-                           apply Z.divide_1_r_nonneg in d; try lia.
-                         - replace (3 + x - 1) with (3 + (x - 1)) by ring. apply H6; try lia. }
-                     entailer!. assert (forall H, value_of_highest n n H = value_of_highest (3 + (n - 3)) n H).
-                     { intros. f_equal. ring. }
-                     rewrite H9. rewrite H6; try lia. unfold value_of_highest. rewrite prime_divisor_list_equation. simpl.
-                     rewrite prime_divisor_list_equation. simpl. rewrite prime_divisor_list_equation. simpl.
-                     unfold new_highest. destruct Zdivide_dec.
-                     --- destruct Z_le_dec; try lia.
-                         *** destruct Zdivide_dec; try lia. destruct Z_le_dec; try lia.
-                         *** destruct Zdivide_dec; try lia; auto.
-                     --- destruct Zdivide_dec.
-                         *** destruct Z_le_dec; try lia. auto.
-                         *** auto.
-              ** exfalso. rewrite repeated_div_thm6 in H4; try lia; auto.
-                 assert (2 | snd (repeated_div 2 (snd (repeated_div 3 n)))).
-                 { exists 1. lia. }
-                 apply repeated_div_thm2 in H6; try lia; auto. apply repeated_div_thm1; try lia.
-              ** exfalso. assert (3 | snd (repeated_div 3 (snd (repeated_div 2 n)))).
-                 { exists 1. lia. }
-                 apply repeated_div_thm2 in H6; try lia; auto. apply repeated_div_thm1; try lia.
-              ** exfalso. pose proof prime_2. pose proof prime_3. rewrite repeated_div_thm6 in H4; try lia; auto.
-                 assert (2 | snd (repeated_div 2 (snd (repeated_div 3 n)))).
-                 { exists 2. lia. }
-                 apply repeated_div_thm2 in H8; try lia; auto. apply repeated_div_thm1; try lia.
-      * pose proof (repeated_div_thm1 n H1 2 ltac:(lia)). pose proof (repeated_div_thm1 _ (proj1 H3) 3 ltac:(lia)). lia.
-    - destruct prime_dec.
-      * admit.
-      * admit.
+        ++ forward. autorewrite with norm. Exists 0. autorewrite with norm. entailer!.
+           -- unfold P, W in H2. destruct H2.
+      * 
 Admitted.
 
