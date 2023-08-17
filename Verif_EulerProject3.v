@@ -908,7 +908,7 @@ Proof.
     - unfold new_highest. destruct Zdivide_dec; [destruct Z_le_dec |]; try lia.
   + autorewrite with norm.
     set (repeated_repeated_div 3 n H1) as W.
-    set ((Z.divide (brute_force W ^ 2) W) \/ (prime (brute_force W - 2) /\ Z.divide (brute_force W - 2) W)) as P.
+    set ((Z.divide ((brute_force W) ^ 2) W) \/ (prime (brute_force W - 2) /\ Z.divide (brute_force W - 2) W)) as P.
     assert ({P} + {~ P}).
     { unfold P. destruct (Zdivide_dec (brute_force W ^ 2) W).
       + left. auto.
@@ -920,13 +920,15 @@ Proof.
     - forward_if (
       if H2
       then PROP ()
+           LOCAL (temp _n (Vlong (Int64.repr 1)); gvars gv)
+           SEP (data_at Ews tulong (Vlong (Int64.repr (brute_force W))) (gv _highest))
+      else PROP ()
            LOCAL (temp _n (Vlong (Int64.repr (brute_force W))); gvars gv)
            SEP (data_at Ews tulong (Vlong (Int64.repr (value_of_second_highest W (repeated_repeated_div_thm0 _ _ H1)))) (gv _highest))
-      else PROP ()
-           LOCAL (temp _n (Vlong (Int64.repr 1)); gvars gv)
-           SEP (data_at Ews tulong (Vlong (Int64.repr (brute_force W))) (gv _highest))).
+      ).
       * admit.
       * admit.
-      * admit.
+      * destruct H2.
+        ++ admit.
+        ++ admit.
 Admitted.
-
