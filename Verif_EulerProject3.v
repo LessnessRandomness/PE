@@ -925,16 +925,8 @@ Proof.
       else PROP ()
            LOCAL (temp _n (Vlong (Int64.repr 1)); gvars gv)
            SEP (data_at Ews tulong (Vlong (Int64.repr (brute_force W))) (gv _highest))).
-      * forward_loop (
-        EX (i: Z),
-          PROP (let W := repeated_repeated_div (6 * i + 3) n H1 in
-                0 <= i /\ (W = 1 \/ (6 * i + 5) * (6 * i + 5) <= W))
-          LOCAL (temp _n (Vlong (Int64.repr (repeated_repeated_div (6 * i + 3) n H1)));
-                 temp _i (Vlong (Int64.repr (6 * i + 5))); gvars gv)
-          SEP (data_at Ews tulong (Vlong (Int64.repr (value_of_highest (6 * i + 3) n H1))) (gv _highest))
-      ).
-        ++ forward. autorewrite with norm. Exists 0. autorewrite with norm. entailer!.
-           -- unfold P, W in H2. destruct H2.
-      * 
+      * admit.
+      * admit.
+      * admit.
 Admitted.
 
