@@ -944,14 +944,6 @@ Proof.
   + rewrite aux13; auto. apply repeated_repeated_div_thm0. auto.
 Qed.
 
-(*
-Theorem aux15 n f g (H: 1 <= n) (H0: 2 <= f) (H1: f <= g):
-  Z.divide f (repeated_repeated_div g n) -> False.
-Proof.
-  intros. apply repeated_repeated_div_thm3 in H2. auto. lia. lia. lia.
-Qed.
-*)
-
 Theorem aux15 n f (H: 1 <= n) (H0: 2 <= f) g (H1: f <= g):
   repeated_repeated_div f (repeated_repeated_div g n) = repeated_repeated_div g n.
 Proof.
@@ -1208,12 +1200,33 @@ Proof.
            pose proof (H9 3 ltac:(lia)). apply H10. exists (2 * X + 3). ring.
         ++ rewrite H7 in H6. apply prime_alt in H6. destruct H6. pose proof (H8 2 ltac:(lia)).
            apply H9. exists (3 * X + 6). ring.
-        ++ assert (rel_prime (brute_force W) (brute_force W - 2)) by admit.
+        ++ assert (rel_prime (brute_force W) (brute_force W - 2)).
+           { replace (brute_force W - 2) with (brute_force W * 1 + (-2)) by ring.
+             apply Zis_gcd_for_euclid2. apply Zis_gcd_minus. simpl. split.
+             + exists (brute_force W). ring.
+             + exists 2. ring.
+             + intros. apply prime_alt in H6. destruct H6. pose proof (prime_divisors 2 prime_2 x H9).
+               destruct H11 as [H11 |[H11 |[H11 | H11]]].
+               - subst. exists (-1). ring.
+               - subst. exists 1. ring.
+               - exfalso. pose proof (H10 x ltac:(lia)). tauto.
+               - exfalso. pose proof (H10 (-x) ltac:(lia)). apply H12. destruct H8. exists (-x0). rewrite H8. ring. }
            assert (Z.divide (brute_force W) W).
            { pose proof (brute_force_main_thm _ H5). destruct H9. destruct H9. auto. }
            pose proof (aux6 W _ _ H8 H9 d ltac:(lia) ltac:(lia)). apply Z.divide_pos_le in H10; try lia.
            nia.
-Admitted.
+Qed.
+
+(* 
+Definition loop_invariant_candidate_2 n i :=
+  if Z.eq_dec n 1
+  then True
+  else if Z_le_dec ((6 * i + 5) * (6 * i + 5)) n
+       then True
+       else n = repeated_repeated_div (6 * i + 4) n /\
+         let W := brute_force n in
+         ~ Z.divide (W * W) n /\ (~ prime (W - 2) \/ ~ Z.divide (W - 2) n).
+
 
 (*
 Definition type1 (N: Z): Prop :=
