@@ -907,9 +907,8 @@ Inductive state N (H: 1 <= N): Z -> Z -> nat -> Prop :=
  | Start: state N H (value_of_highest 3 N) (snd (repeated_div 3 (snd (repeated_div 2 N)))) 0
  | Loop: forall h n i, (6 * Z.of_nat i + 5) * (6 * Z.of_nat i + 5) <= n ->
          state N H h n i ->
-         state N H (value_of_highest (6 * Z.of_nat i + 7) n) (snd (repeated_div (6 * Z.of_nat i + 7) (snd (repeated_div (6 * Z.of_nat i + 5) n)))) (i + 1).
+         state N H (value_of_highest (6 * Z.of_nat i + 9) N) (snd (repeated_div (6 * Z.of_nat i + 7) (snd (repeated_div (6 * Z.of_nat i + 5) n)))) (i + 1).
 
-Definition finished {N H h n i} (s: state N H n h i): Prop := n < (6 * Z.of_nat i + 5) * (6 * Z.of_nat i + 5).
 
 Definition is_loop_invariant (T: Z -> Z -> Prop) :=
   forall N H n i h (s: state N H h n i), T n (Z.of_nat i).
@@ -1010,6 +1009,13 @@ Proof.
       pose proof (H6 2 ltac:(lia)). apply H7. exists (3 * W + 5). ring.
 Qed.
 
+Theorem state_thm1 N H h n i: state N H h n i -> h = value_of_highest (6 * Z.of_nat i + 3) N.
+Proof.
+  intro. induction H0.
+  + simpl. auto.
+  + rewrite Nat2Z.inj_add. simpl. ring_simplify (6 * (Z.of_nat i + 1) + 3). auto.
+Qed.
+
 Theorem aux16 f n: 1 < brute_force (repeated_repeated_div f n) -> f + 1 <= brute_force (repeated_repeated_div f n).
 Proof.
 Admitted.
@@ -1017,8 +1023,6 @@ Admitted.
 Theorem aux17 f n: 1 < repeated_repeated_div f n -> 1 < brute_force (repeated_repeated_div f n).
 Proof.
 Admitted.
-
-(* 
 
 Theorem correct_loop_invariant: is_loop_invariant loop_invariant_candidate.
 Proof.
@@ -1194,24 +1198,21 @@ Proof.
           pose proof (repeated_repeated_div_thm0 (6 * X + 10) n ltac:(lia)). lia. }
         destruct (prime_dec (brute_force W - 2)); try tauto.
         destruct (Zdivide_dec (brute_force W - 2) W); try tauto.
-        exfalso.
-
-        
-        
-        assert (6 * X + 9 <= brute_force W - 2) by lia.
-        assert (brute_force W | W). { admit. }
-        assert (rel_prime (brute_force W) (brute_force W - 2)). { admit. }
-        assert (0 < brute_force W) by admit. assert (0 < brute_force W - 2) by admit.
-        pose proof (aux6 W _ _ H7 H6 d H8 H9). assert (0 < W).
-        { rewrite HeqW. assert (1 <= snd (repeated_div (6 * X + 5) n)).
-          { apply repeated_div_thm1. lia. lia. }
-          pose proof (repeated_div_thm1 _ H11 (6 * X + 7) ltac:(lia)). lia. }
-        pose proof (Z.divide_pos_le _ _ H11 H10).
-        assert (W = brute_force W * (brute_force W - 2)) by admit.
-        assert (brute_force W = 6 * X + 11) by admit.
-        assert (brute_force W - 2 = 6 * X + 9) by lia.
-        assert (W = 
-           
+        exfalso. assert (2 <= W).
+        { rewrite H3. pose proof (repeated_repeated_div_thm0 (6 * X + 10) n). lia. }
+        assert (prime (brute_force W)).
+        { pose proof (brute_force_main_thm _ H5). destruct H6. destruct H6. auto. }
+        assert (brute_force W = 6 * X + 11 \/ brute_force W = 6 * X + 12 \/ 6 * X + 13 <= brute_force W) by lia.
+        destruct H7 as [H7 |[H7 | H7]].
+        ++ rewrite H7 in p. ring_simplify (6 * X + 11 - 2) in p. apply prime_alt in p. destruct p.
+           pose proof (H9 3 ltac:(lia)). apply H10. exists (2 * X + 3). ring.
+        ++ rewrite H7 in H6. apply prime_alt in H6. destruct H6. pose proof (H8 2 ltac:(lia)).
+           apply H9. exists (3 * X + 6). ring.
+        ++ assert (rel_prime (brute_force W) (brute_force W - 2)) by admit.
+           assert (Z.divide (brute_force W) W).
+           { pose proof (brute_force_main_thm _ H5). destruct H9. destruct H9. auto. }
+           pose proof (aux6 W _ _ H8 H9 d ltac:(lia) ltac:(lia)). apply Z.divide_pos_le in H10; try lia.
+           nia.
 Admitted.
 
 (*
