@@ -15,26 +15,24 @@ Proof.
 Defined.
 
 Function repeated_repeated_div (i n: Z) { measure Z.to_nat i }: Z :=
-  match Z_le_dec 1 n with
-  | left H1 => if Z_le_dec i 1
-               then n
-               else snd (repeated_div i (repeated_repeated_div (i - 1) n))
-  | _ => 1
-  end.
+  if Z_le_dec 1 n
+  then if Z_le_dec i 1
+       then n
+       else snd (repeated_div i (repeated_repeated_div (i - 1) n))
+  else 1.
 Proof.
   lia.
 Defined.
 
 Function prime_divisor_list (i n: Z) { measure Z.to_nat i}: list (Z * Z) :=
-  match Z_le_dec 1 n with
-  | left H1 => let W := prime_divisor_list (i - 1) n in
-               if Z_le_dec i 1
-               then []
-               else if Zdivide_dec i (repeated_repeated_div (i - 1) n)
-                    then cons (i, fst (repeated_div i (repeated_repeated_div (i - 1) n))) W
-                    else W
-  | _ => []
-  end.
+  if Z_le_dec 1 n
+  then if Z_le_dec i 1
+       then []
+       else let W := prime_divisor_list (i - 1) n in
+            if Zdivide_dec i (repeated_repeated_div (i - 1) n)
+            then cons (i, fst (repeated_div i (repeated_repeated_div (i - 1) n))) W
+            else W
+  else [].
 Proof.
   lia. lia.
 Defined.
@@ -651,12 +649,6 @@ Proof.
   apply brute_force_and_prime_divisor_list_thm; auto.
 Qed.
 
-Fixpoint product (L: list (Z * Z)) :=
-  match L with
-  | nil => 1
-  | cons (x, p) t => x ^ p * product t
-  end.
-
 Theorem aux0 n (H: 1 <= n) a b (Ha: 1 <= a) (Hb: 1 <= b) (H0: rel_prime a b):
   fst (repeated_div b n) = fst (repeated_div b (n * a)).
 Proof.
@@ -1254,7 +1246,24 @@ Qed.
 
 Definition factorization (n: Z) := prime_divisor_list n n.
 
-Theorem aux27 (n i: Z) (Hn: 1 <= i <= n):
+(* Lemmas about prime_divisor_list and facxtorization *)
+
+Fixpoint decreasing (L: list Z): Prop :=
+  match L with
+  | x :: (y :: t) as t' => x > y /\ decreasing t'
+  | _ => True
+  end.
+
+Theorem prime_divisor_list_thm0 (n i p: Z) (H: 2 <= i): p <= i -> (p | n) -> prime p ->
+  In (p, fst (repeated_div p n)) (prime_divisor_list i n).
+Proof.
+  intros. rewrite prime_divisor_list_equation. repeat (destruct Z_le_dec; try lia).
+  + destruct Zdivide_dec.
+    - 
+Admitted.
+
+
+(* Theorem aux27 (n i: Z) (Hn: 1 <= i <= n):
   forall x, ((x | n) /\ prime x /\ x <= i) <-> In x (map fst (prime_divisor_list i n)).
 Proof.
 Admitted.
@@ -1266,7 +1275,7 @@ Proof.
   + unfold factorization. apply aux27; try lia. destruct H. split; [|split]; auto.
     apply Z.divide_pos_le in H; try lia.
   + unfold factorization in H. apply aux27 in H; try lia. tauto.
-Qed.
+Qed. *)
 
 Theorem aux29 (n m: Z) (Hn: 2 <= n) (Hm: 2 <= m): rel_prime n m -> ~ (n | m).
 Proof.
@@ -1276,7 +1285,12 @@ Qed.
 
 Theorem aux30 (n i: Z) (Hn: prime n) (Hi: 1 <= i): brute_force (n ^ i) = n.
 Proof.
+  assert (1 < n ^ i). { apply Zpow_facts.Zpower_gt_1. destruct Hn; auto. lia. }
+  pose proof (brute_force_main_thm (n ^ i) ltac:(lia)).
+  destruct H0. destruct H0.
 Admitted.
+
+
 
 Definition type1 (N: Z): Prop :=
   let W := repeated_repeated_div 3 N in
@@ -1401,51 +1415,130 @@ Proof.
           rewrite H5. rewrite (Z.mul_comm (snd _)). rewrite <- repeated_div_thm2; try lia.
           + rewrite Z.mul_comm. rewrite <- repeated_div_thm2; try lia.
           + apply repeated_div_thm1; try lia. }
-        admit.
+        assert (W > 3).
+        { apply repeated_repeated_div_thm10 with (n := N); try lia. exists 1. lia. }
+        rewrite (brute_force_and_all_prime_divisors_equiv N ltac:(lia)). unfold value_of_highest.
+        destruct Z_le_dec; try lia.
+        pose proof (repeated_div_thm0 3 N). pose proof (repeated_div_thm0 2 N).
+        assert (fst (repeated_div 3 N) = 0 \/ 1 <= fst (repeated_div 3 N)) by lia. destruct H9.
+        ++ assert (fst (repeated_div 2 N) = 0 \/ 1 <= fst (repeated_div 2 N)) by lia. destruct H10.
+           -- assert (prime_divisor_list N N = [(W, 1)]) by admit. rewrite H11. auto.
+           -- assert (prime_divisor_list N N = [(W, 1); (2, fst (repeated_div 2 N))]) by admit. rewrite H11. auto.
+        ++ assert (fst (repeated_div 2 N) = 0 \/ 1 <= fst (repeated_div 2 N)) by lia. destruct H10.
+           -- assert (prime_divisor_list N N = [(W, 1); (3, fst (repeated_div 3 N))]) by admit. rewrite H11. auto.
+           -- assert (prime_divisor_list N N = [(W, 1); (3, fst (repeated_div 3 N)); (2, fst (repeated_div 2 N))]) by admit. rewrite H11. auto.
       * intro. destruct H5 as [H5|[H5|[H5 H6]]].
         ++ destruct p. lia.
         ++ destruct p. destruct H5. assert (0 < x) by lia. nia.
         ++ destruct H5. destruct H6. assert (W = 4 \/ 5 <= W) by lia. destruct H8.
            -- apply prime_alt in p. destruct p. pose proof (H10 2 ltac:(lia)). apply H11. exists 2. lia.
            -- assert (0 < x) by nia. nia.
-    - assert (Z.divide 2 W \/ Z.divide 3 W) by admit.
-      destruct H3.
+    - assert (W = 1 \/ Z.divide 2 W \/ Z.divide 3 W) by admit.
+      destruct H3 as [H3|[H3|H3]].
+      * rewrite H3. split; split.
+        ++ intros. split; auto. rewrite (brute_force_and_all_prime_divisors_equiv N ltac:(lia)).
+           unfold value_of_highest. destruct Z_le_dec; try lia.
+           pose proof (repeated_div_thm0 3 N). pose proof (repeated_div_thm0 2 N).
+           assert (fst (repeated_div 3 N) = 0 \/ 1 <= fst (repeated_div 3 N)) by lia.
+           assert (fst (repeated_div 2 N) = 0 \/ 1 <= fst (repeated_div 2 N)) by lia. destruct H7, H8.
+           -- assert (prime_divisor_list N N = []) by admit. assert (prime_divisor_list 3 N = []) by admit.
+              rewrite H9, H10. auto.
+           -- assert (prime_divisor_list N N = [(2, fst (repeated_div 2 N))]) by admit.
+              assert (prime_divisor_list 3 N = [(2, fst (repeated_div 2 N))]) by admit.
+              rewrite H9, H10. auto.
+           -- assert (prime_divisor_list N N = [(3, fst (repeated_div 3 N))]) by admit.
+              assert (prime_divisor_list 3 N = [(3, fst (repeated_div 3 N))]) by admit.
+              rewrite H9, H10. auto.
+           -- assert (prime_divisor_list N N = [(3, fst (repeated_div 3 N)); (2, fst (repeated_div 2 N))]) by admit.
+              assert (prime_divisor_list 3 N = [(3, fst (repeated_div 3 N)); (2, fst (repeated_div 2 N))]) by admit.
+              rewrite H9, H10. auto.
+        ++ intros. destruct H4. auto.
+        ++ intros. exfalso. apply H4; auto.
+        ++ intros. destruct H4. intro. apply aux17 in H. lia.
       * rewrite HeqW in H3. apply repeated_repeated_div_thm3 in H3; try lia.
       * rewrite HeqW in H3. apply repeated_repeated_div_thm3 in H3; try lia.
   + simpl in *. pose proof (state_thm0 _ _ _ _ _ s). rewrite Nat2Z.inj_add in *. remember (Z.of_nat i) as X.
-    simpl in *. ring_simplify (6 * (X + 1) + 5) in H0. clear IHs. (* ? *)
-    repeat split; intros.
-    * ring_simplify (6 * (X + 1) + 4) in H1. destruct H4 as [H4|[H4|[H4 H5]]].
-      ++ exfalso. rewrite H3 in H2. assert (repeated_repeated_div (6 * X + 4) N = 1).
-         { rewrite <- H4. replace (6 * X + 4) with (3 + (6 * X + 1)) by ring. rewrite aux19; try lia. }
-         lia.
-      ++ rewrite H3 in H0, H1, H2. clear H3 H1. admit.
-      ++ rewrite H3 in *. clear H3 H1. admit.
-    * destruct H4 as [H4|[H4|[H4 H5]]].
-      ++ rewrite H1. replace (6 * (X + 1) + 4) with (3 + (6 * X + 7)) by ring.
-         apply aux19; try lia; auto.
-      ++ rewrite H3 in *. admit.
-      ++ rewrite H3 in *. clear H3. clear H1. admit.
-    * destruct H4. clear H1. rewrite H3 in H2. rewrite H3 in H5. admit.
-    * rewrite H3 in H2, H0, H1. admit.
-    * admit.
-    * rewrite H3 in *. clear H3. destruct H4. clear H1. intro. destruct H1 as [H1|[H1|[H1 H5]]].
-      ++ assert (brute_force N = 1) by admit. assert (N = 1) by admit. lia.
-      ++ admit.
-      ++ assert (snd (repeated_div (6 * X + 7) (snd (repeated_div (6 * X + 5) (repeated_repeated_div (6 * X + 4) N)))) =
-                 repeated_repeated_div (6 * X + 7) N).
-         { rewrite (repeated_repeated_div_equation (6 * X + 7)). destruct Z_le_dec; try lia.
-           destruct Z_le_dec; try lia. do 2 f_equal. ring_simplify (6 * X + 7 - 1).
-           rewrite (repeated_repeated_div_thm8 (6 * X + 6)); try lia.
-           + ring_simplify (6 * X + 6 - 1). rewrite (repeated_repeated_div_equation (6 * X + 5)).
-             destruct Z_le_dec; try lia. destruct Z_le_dec; try lia. ring_simplify (6 * X + 5 - 1). auto.
-           + intro. apply prime_alt in H6. destruct H6. pose proof (H7 2 ltac:(lia)). apply H8.
-             exists (3 * X + 3). ring. }
-         rewrite H6 in *. clear H6. rewrite aux20 in H3; try lia.
-         -- ring_simplify (6 * X + 9 - 1) in H3. rewrite aux20 in H3; try lia.
-            ** ring_simplify (6 * X + 8 - 1) in H3.
-               assert (brute_force (snd (repeated_div (brute_force N) N)) = brute_force (repeated_repeated_div 3 N) - 2).
-               { admit. }
+    simpl in *. ring_simplify (6 * (X + 1) + 5) in H0. clear IHs.
+    pose proof (correct_loop_invariant _ _ _ _ _ s). unfold loop_invariant_candidate in H4. rewrite <- HeqX in *.
+    ring_simplify (6 * (X + 1) + 4) in H1. rewrite H1 in H0. clear H1.
+    destruct Z.eq_dec.
+    - rewrite e in *. lia.
+    - destruct Z_le_dec.
+      * clear H4 l. rewrite H3 in n0, H2. clear n0. repeat split; intros. destruct H1.
+        ++ assert (repeated_repeated_div (6 * X + 4) N = 1) by admit. lia.
+        ++ destruct H1.
+           -- assert (brute_force (repeated_repeated_div 3 N) = 1 \/ 2 <= brute_force (repeated_repeated_div 3 N)) by admit.
+              destruct H4.
+              ** pose proof (aux17 (repeated_repeated_div 3 N)). assert (2 <= repeated_repeated_div 3 N) by admit. lia.
+              ** assert (brute_force N = brute_force (repeated_repeated_div 3 N)) by admit.
+                 assert (brute_force N * brute_force N | N) by admit.
+                 assert (6 * X + 5 <= brute_force N <= 6 * X + 7) by admit.
+                 assert (brute_force N = 6 * X + 5 \/ brute_force N = 6 * X + 7) by admit.
+                 admit.
+           -- assert (brute_force (repeated_repeated_div 3 N) = 1 \/ 2 <= brute_force (repeated_repeated_div 3 N)) by admit.
+              destruct H4.
+              ** pose proof (aux17 (repeated_repeated_div 3 N)). assert (2 <= repeated_repeated_div 3 N) by admit. lia.
+              ** assert (brute_force N = brute_force (repeated_repeated_div 3 N)) by admit.
+                 assert (brute_force N | N) by admit.
+                 assert (brute_force N - 2 | N) by admit.
+                 assert (brute_force N = 6 * X + 7) by admit.
+                 admit.
+        ++ rewrite H3. destruct H1.
+           -- admit.
+           -- destruct H1.
+              ** assert (brute_force (repeated_repeated_div 3 N) = 1 \/ 2 <= brute_force (repeated_repeated_div 3 N)) by admit.
+                 destruct H4.
+                 +++ pose proof (aux17 (repeated_repeated_div 3 N)). assert (2 <= repeated_repeated_div 3 N) by admit. lia.
+                 +++ assert (brute_force N = brute_force (repeated_repeated_div 3 N)) by admit.
+                     assert (brute_force N * brute_force N | N) by admit.
+                     assert (6 * X + 5 <= brute_force N <= 6 * X + 7) by admit.
+                     assert (brute_force N = 6 * X + 5 \/ brute_force N = 6 * X + 7) by admit.
+                     admit.
+              ** assert (brute_force (repeated_repeated_div 3 N) = 1 \/ 2 <= brute_force (repeated_repeated_div 3 N)) by admit.
+                 destruct H4.
+                 +++ pose proof (aux17 (repeated_repeated_div 3 N)). assert (2 <= repeated_repeated_div 3 N) by admit. lia.
+                 +++ assert (brute_force N = brute_force (repeated_repeated_div 3 N)) by admit.
+                     assert (brute_force N | N) by admit.
+                     assert (brute_force N - 2 | N) by admit.
+                     assert (brute_force N = 6 * X + 7) by admit.
+                     admit.
+        ++ destruct H1. rewrite H3 in H4. assert (repeated_repeated_div 3 N = 1 \/ 2 <= repeated_repeated_div 3 N) by admit.
+           destruct H5; auto. right. assert (6 * X + 5 <= brute_force N <= 6 * X + 7) by admit.
+           assert (brute_force N = 6 * X + 5 \/ brute_force N = 6 * X + 7) by admit.
+           assert (2 <= brute_force (repeated_repeated_div 3 N)) by admit.
+           assert (brute_force N = brute_force (repeated_repeated_div 3 N)) by admit.
+           rewrite <- H9. destruct H7.
+           -- left. assert (repeated_repeated_div (6 * X + 4) N = (6 * X + 5) * (6 * X + 5)) by admit.
+              assert ((6 * X + 5) * (6 * X + 5) | repeated_repeated_div (6 * X + 4) N). { exists 1. lia. }
+              rewrite H7. admit.
+           -- right. assert (prime (6 * X + 5)) by admit.
+              assert (repeated_repeated_div (6 * X + 4) N = (6 * X + 5) * (6 * X + 7)) by admit.
+              rewrite H7. ring_simplify (6 * X + 7 - 2).
+              assert ((6 * X + 5) * (6 * X + 7) | repeated_repeated_div (6 * X + 4) N). { exists 1. lia. }
+              assert ((6 * X + 5) * (6 * X + 7) | repeated_repeated_div 3 N) by admit.
+              split; auto. destruct H13. exists (x * (6 * X + 7)). lia.
+        ++ assert (repeated_repeated_div 3 N <> 1 /\
+                   ~ (brute_force (repeated_repeated_div 3 N) * brute_force (repeated_repeated_div 3 N) | repeated_repeated_div 3 N) /\
+                   (~ prime (brute_force (repeated_repeated_div 3 N) - 2) \/
+                    ~ (brute_force (repeated_repeated_div 3 N) - 2 | repeated_repeated_div 3 N))) by tauto.
+           clear H1. destruct H4. destruct H4. destruct H5.
+           -- admit. (* ? *)
+           -- admit. (* ? *)
+        ++ assert (repeated_repeated_div 3 N <> 1 /\
+                   ~ (brute_force (repeated_repeated_div 3 N) * brute_force (repeated_repeated_div 3 N) | repeated_repeated_div 3 N) /\
+                   (~ prime (brute_force (repeated_repeated_div 3 N) - 2) \/
+                    ~ (brute_force (repeated_repeated_div 3 N) - 2 | repeated_repeated_div 3 N))) by tauto.
+           clear H1. destruct H4. destruct H4. destruct H5.
+           -- admit. (* ? *)
+           -- admit. (* ? *) 
+        ++ intro. destruct H1. destruct H4.
+           -- admit.
+           -- destruct H4.
+              ** rewrite H3 in H5. admit. (* ? *)
+              ** destruct H4. rewrite H3 in H5. admit. (* ? *)
+      * destruct H4. destruct H4. split.
+        ++ admit. (* ? *)
+        ++ admit. (* ? *)
 Admitted.
 
 
