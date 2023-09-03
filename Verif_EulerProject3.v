@@ -14,27 +14,18 @@ Proof.
   intros. destruct anonymous1. subst. rewrite Z.div_mul; try lia. nia.
 Defined.
 
-Function repeated_repeated_div (i n: Z) { measure Z.to_nat i }: Z :=
+Function factorization (i n: Z) { measure Z.to_nat i }: list (Z * Z) * Z :=
   if Z_le_dec 1 n
-  then if Z_le_dec i 1
-       then n
-       else snd (repeated_div i (repeated_repeated_div (i - 1) n))
-  else 1.
+  then if Z_le_dec 2 i
+       then let W := factorization (i - 1) n in
+            if Zdivide_dec i (snd W)
+            then let p := repeated_div i (snd W) in
+                 ((i, fst p) :: fst W, snd p)
+            else (fst W, snd W)
+       else ([], n)
+  else ([], n).
 Proof.
   lia.
-Defined.
-
-Function prime_divisor_list (i n: Z) { measure Z.to_nat i}: list (Z * Z) :=
-  if Z_le_dec 1 n
-  then if Z_le_dec i 1
-       then []
-       else let W := prime_divisor_list (i - 1) n in
-            if Zdivide_dec i (repeated_repeated_div (i - 1) n)
-            then cons (i, fst (repeated_div i (repeated_repeated_div (i - 1) n))) W
-            else W
-  else [].
-Proof.
-  lia. lia.
 Defined.
 
 
@@ -142,65 +133,76 @@ Proof.
   + simpl. auto.
 Qed.
 
-
-(* Theorem about the function 'repeated_repeated_div' *)
-
-Theorem repeated_repeated_div_thm0 (i n: Z) (H: 1 <= n): 1 <= repeated_repeated_div i n.
+Theorem repeated_div_thm8 (i n: Z) (H: 1 <= n) (H0: 2 <= i):
+  forall x, 1 <= x -> (x | snd (repeated_div i n)) -> (x | n).
 Proof.
-  destruct (Z_le_dec i 1).
-  + rewrite repeated_repeated_div_equation. repeat (destruct Z_le_dec; try lia).
-  + assert (0 <= i) by lia. pattern i. apply Z_lt_induction; auto; intros. clear n0.
-    rewrite repeated_repeated_div_equation. destruct Z_le_dec; try lia. destruct Z_le_dec; try lia.
-    apply repeated_div_thm1; auto; try lia. apply H1. lia.
+  intros. destruct H2. exists (x0 * i ^ fst (repeated_div i n)).
+  rewrite Zmult_comm, Zmult_assoc, (Zmult_comm x), <- H2, Zmult_comm, <- repeated_div_thm2; try lia.
 Qed.
 
-Theorem repeated_repeated_div_thm1 (i n: Z) (H: 1 <= n) (H0: 2 <= i):
-  (i | repeated_repeated_div i n) -> False.
+
+(* Theorem about the function 'factorization' *)
+
+Theorem factorization_thm0 (i n: Z) (H: 1 <= n) (H0: 1 <= i): 1 <= snd (factorization i n).
 Proof.
-  intros. rewrite repeated_repeated_div_equation in H1. repeat (destruct Z_le_dec in H1; try lia).
-  apply repeated_div_thm3 in H1; auto. apply repeated_repeated_div_thm0. auto.
+  assert (0 <= i) by lia. revert H0. pattern i. apply Z_lt_induction; auto; intros. clear i H1.
+  assert (x = 1 \/ 2 <= x) by lia. destruct H1.
+  + subst. rewrite factorization_equation. repeat (destruct Z_le_dec; try lia). simpl. auto.
+  + rewrite factorization_equation. repeat (destruct Z_le_dec; try lia). destruct Zdivide_dec.
+    - simpl. apply repeated_div_thm1. apply H0; try lia.
+    - simpl. apply H0; try lia.
 Qed.
 
-Theorem repeated_repeated_div_thm2 (i n w: Z) (H: 1 <= n) (H0: 1 <= i) (H1: 0 <= w):
-  forall i, 2 <= i <= i + w -> (i | repeated_repeated_div (i + w) n) -> False.
+Theorem factorization_thm1 (i n: Z) (H: 1 <= n) (H0: 2 <= i):
+  (i | snd (factorization i n)) -> False.
 Proof.
-  pattern w. apply Z_lt_induction; auto; intros. clear H1 w.
+  intros. rewrite factorization_equation in H1. repeat (destruct Z_le_dec; try lia).
+  destruct Zdivide_dec.
+  + simpl in *. apply repeated_div_thm3 in H1; auto. assert (i = 2 \/ 3 <= i) by lia. destruct H2.
+    - subst. simpl. rewrite factorization_equation. repeat (destruct Z_le_dec; try lia). simpl. auto.
+    - apply factorization_thm0; try lia.
+  + simpl in *. tauto.
+Qed.
+
+Theorem factorization_thm2_aux (i n w: Z) (H: 1 <= n) (H0: 2 <= i) (H1: 0 <= w):
+  (i | snd (factorization (i + w) n)) -> False.
+Proof.
+  pose proof H1. revert H2. pattern w. apply Z_lt_induction; auto; intros. clear H1 w.
   assert (x = 0 \/ 1 <= x) by lia. destruct H1.
-  + subst. ring_simplify (i0 + 0) in H4. apply repeated_repeated_div_thm1 in H4; lia.
-  + rewrite repeated_repeated_div_equation in H4. destruct Z_le_dec in H4; try lia. destruct Z_le_dec in H4; try lia.
-    assert (0 <= x - 1 < x) by lia. assert (2 <= i0 <= i0 + (x - 1)) by lia.
-    pose proof (H2 _ H5 _ H6). ring_simplify (i0 + (x - 1)) in H7.
-    assert (1 <= i0 + x) by lia.
-    assert (1 <= repeated_repeated_div (i0 + x - 1) n) by (apply repeated_repeated_div_thm0; try lia).
-    apply (H2 _ H5 _ H6).
-    assert (snd (repeated_div (i0 + x) (repeated_repeated_div (i0 + x - 1) n)) | (repeated_repeated_div (i0 + x - 1) n)).
-    { apply repeated_div_thm4; try lia. }
-    ring_simplify (i0 + (x - 1)). eapply Z.divide_trans; eauto.
+  + subst. ring_simplify (i + 0) in H4. apply factorization_thm1 in H4; auto.
+  + rewrite factorization_equation in H4. repeat (destruct Z_le_dec; try lia).
+    destruct Zdivide_dec; simpl in *.
+    - apply (H2 (x - 1)); try lia. ring_simplify (i + (x - 1)).
+      assert (snd (repeated_div (i + x) (snd (factorization (i + x - 1) n))) | snd (factorization (i + x - 1) n)).
+      { apply repeated_div_thm4; try lia. apply factorization_thm0; try lia. }
+      exact (Z.divide_trans _ _ _ H4 H5).
+    - apply (H2 (x - 1)); try lia. ring_simplify (i + (x - 1)). auto.
 Qed.
 
-Theorem repeated_repeated_div_thm3 (i n: Z) (H: 1 <= n) (H0: 2 <= i):
-  forall x, 2 <= x <= i -> (x | repeated_repeated_div i n) -> False.
+Theorem factorization_thm2 (i n: Z) (H: 1 <= n) (H0: 2 <= i):
+  forall x, 2 <= x <= i -> (x | snd (factorization i n)) -> False.
 Proof.
-  intros. replace i with (x + (i - x)) in H2 by lia.
-  eapply repeated_repeated_div_thm2 in H2; eauto. lia. lia.
+  intros. replace i with (x + (i - x)) in H2 by ring.
+  apply factorization_thm2_aux in H2; try lia.
 Qed.
 
 Theorem repeated_repeated_div_thm4 (i n x: Z) (H: 1 <= n) (H0: 1 <= i) (H1: 2 <= x):
-  ( x | repeated_repeated_div i n) -> (x | n).
+  ( x | snd (factorization i n)) -> (x | n).
 Proof.
   assert (0 <= i) by lia. revert H0. pattern i. apply Z_lt_induction; auto; intros. clear H2 i.
-  rewrite repeated_repeated_div_equation in H4. destruct Z_le_dec in H4; try lia. destruct Z_le_dec in H4; auto.
-  assert (x | repeated_repeated_div (x0 - 1) n).
-  { destruct H4. exists (x1 * x0 ^ fst (repeated_div x0 (repeated_repeated_div (x0 - 1) n))).
-    rewrite Zmult_comm. rewrite Zmult_assoc. rewrite (Zmult_comm x). rewrite <- H2.
-    rewrite Zmult_comm. rewrite <- repeated_div_thm2; try lia.
-    apply repeated_repeated_div_thm0. auto. }
-  assert (x0 = 1 \/ 1 <= x0 - 1) by lia. destruct H5.
-  + subst. simpl in *. rewrite repeated_repeated_div_equation in H2.
-    destruct Z_le_dec in H2; try lia.
-  + apply H0 in H2; auto. lia.
+  rewrite factorization_equation in H4. repeat (destruct Z_le_dec; try lia).
+  + destruct Zdivide_dec.
+    - simpl in H4. assert (x | snd (factorization (x0 - 1) n)).
+      { apply repeated_div_thm8 in H4; try lia; auto. apply factorization_thm0; lia. }
+      assert (x0 = 2 \/ 3 <= x0) by lia. destruct H5.
+      * subst. simpl in *. rewrite factorization_equation in H2. repeat (destruct Z_le_dec; try lia).
+        simpl in H2. auto.
+      * apply H0 in H2; try lia. auto.
+    - simpl in H4. apply H0 in H4; auto; try lia.
+  + simpl. auto.
 Qed.
 
+(*
 Theorem repeated_repeated_div_thm5 (i n: Z) (H: 1 <= n) (H0: 1 <= i):
   (i + 1 | repeated_repeated_div i n) -> prime (i + 1) /\ (i + 1 | n).
 Proof.
@@ -1254,13 +1256,6 @@ Fixpoint decreasing (L: list Z): Prop :=
   | _ => True
   end.
 
-Theorem prime_divisor_list_thm0 (n i p: Z) (H: 2 <= i): p <= i -> (p | n) -> prime p ->
-  In (p, fst (repeated_div p n)) (prime_divisor_list i n).
-Proof.
-  intros. rewrite prime_divisor_list_equation. repeat (destruct Z_le_dec; try lia).
-  + destruct Zdivide_dec.
-    - 
-Admitted.
 
 
 (* Theorem aux27 (n i: Z) (Hn: 1 <= i <= n):
@@ -1282,13 +1277,6 @@ Proof.
   intros. intro. destruct H0. assert (0 < x) by lia. unfold rel_prime in H. subst.
   apply Zis_gcd_gcd in H; try lia. rewrite Z.mul_comm, Z.gcd_mul_diag_l in H; lia.
 Qed.
-
-Theorem aux30 (n i: Z) (Hn: prime n) (Hi: 1 <= i): brute_force (n ^ i) = n.
-Proof.
-  assert (1 < n ^ i). { apply Zpow_facts.Zpower_gt_1. destruct Hn; auto. lia. }
-  pose proof (brute_force_main_thm (n ^ i) ltac:(lia)).
-  destruct H0. destruct H0.
-Admitted.
 
 Theorem aux31 (n i w: Z): 1 <= n -> 2 <= i -> 0 <= w ->
   repeated_repeated_div i n = 1 -> repeated_repeated_div (i + w) n = 1.
@@ -1337,9 +1325,53 @@ Proof.
   intros. replace j with (i + (j - i)) by ring. apply aux33; try lia.
 Qed.
 
+Fixpoint power_of_factor f (L: list (Z * Z)): Z :=
+  match L with
+  | p :: t => if Z.eq_dec (fst p) f
+              then snd p
+              else power_of_factor f t
+  | nil => 0
+  end.
+
+Function multiply_two_factorizations i (L1 L2: list (Z * Z)) { measure Z.to_nat i }: list (Z * Z) :=
+  if Z_le_dec 2 i
+  then (i, power_of_factor i L1 + power_of_factor i L2) :: multiply_two_factorizations (i - 1) L1 L2
+  else [].
+Proof.
+  lia.
+Defined.
+
+Theorem multiply_two_factorizations i 
+
+
+Theorem aux30 (n i: Z) (Hn: prime n) (Hi: 1 <= i): brute_force (n ^ i) = n.
+Proof.
+  assert (1 < n ^ i). { apply Zpow_facts.Zpower_gt_1. destruct Hn; auto. lia. }
+  pose proof (brute_force_main_thm (n ^ i) ltac:(lia)).
+  destruct H0. destruct H0.
+Admitted.
+
+
 Theorem aux35 (n i: Z) (Hn: 1 <= n) (Hi: 2 <= i):
   2 <= brute_force (repeated_repeated_div i n) -> brute_force (repeated_repeated_div i n) = brute_force n.
 Proof.
+  assert (n = 1 \/ 2 <= n) by lia. destruct H.
+  + subst. intro. assert (repeated_repeated_div i 1 = 1).
+    { assert (0 <= i) by lia. clear H Hn. revert Hi. pattern i. apply Z_lt_induction; auto; intros. clear i H0.
+      rewrite repeated_repeated_div_equation. repeat (destruct Z_le_dec; try lia).
+      assert (x = 2 \/ 3 <= x) by lia. destruct H0.
+      + subst. simpl. reflexivity.
+      + rewrite H; try lia. rewrite repeated_div_equation. repeat (destruct Z_le_dec; try lia).
+        destruct Zdivide_dec.
+        - apply Z.divide_1_r in d. lia.
+        - reflexivity. }
+    rewrite H0. auto.
+  + clear Hn. intro.
+    assert (forall i w, (i | w) -> brute_force (w / i) <= brute_force w).
+    { intros. destruct H1. rewrite H1. rewrite Z.div_mul. admit. admit. }
+    assert (forall i w, brute_force (snd (repeated_div i w)) <= brute_force w).
+    { admit. }
+    admit.
 Admitted.
 
 Theorem aux36 (n i: Z) (Hn: 1 <= n) (Hi: 2 <= i):
