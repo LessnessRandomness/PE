@@ -44,7 +44,7 @@ Qed.
 
 (* Let's define function that finds the last element of increasing sequence that's less or equal to given limit value *)
 
-Require Import FunInd.
+From Stdlib Require Import FunInd.
 
 Function last_value_le_aux (f: sequence Z) (H: increasing f) (M: Z) (i: nat)
   { measure (fun i => Z.to_nat (M - f i)) i }: nat :=
