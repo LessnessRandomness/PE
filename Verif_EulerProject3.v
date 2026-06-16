@@ -568,7 +568,7 @@ Proof. abstract lia. Defined.
 Theorem Zseq_thm (n: Z): forall x, In x (Zseq n) <-> 1 <= x <= n.
 Proof.
   destruct (Z_le_dec n 0).
-  + intro. rewrite Zseq_equation. destruct Z_le_dec; try lia. intuition.
+  + intro. rewrite Zseq_equation. destruct Z_le_dec; try lia. auto with *.
   + intro. assert (1 <= n) by lia. clear n0. assert (0 <= n) by lia.
     revert H x. pattern n. apply Z_lt_induction; auto; clear H0; intros. split; intros.
     - rewrite Zseq_equation in H1. destruct Z_le_dec.
@@ -1019,6 +1019,7 @@ Qed.
 Theorem brute_force_thm12 (n i: Z) (Hn: 1 <= n) (Hi: 2 <= i):
   2 <= brute_force (repeated_repeated_div i n) -> brute_force (repeated_repeated_div i n) = brute_force n.
 Proof.
+  
 Admitted.
 
 
@@ -1277,6 +1278,7 @@ Theorem repeated_repeated_div_thm22 (n i: Z) (Hn: 1 <= n) (Hi: 2 <= i):
   repeated_repeated_div i n = 1 -> brute_force n <= i.
 Proof.
   intros.
+  
 Admitted.
 
 Theorem repeated_repeated_div_thm23 (n i: Z) (Hn: 1 <= n) (Hi: 2 <= i):
