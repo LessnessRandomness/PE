@@ -357,7 +357,7 @@ Proof.
 Qed.
 
 Theorem repeated_repeated_div_thm4 (i n x: Z) (H: 1 <= n) (H0: 1 <= i) (H1: 2 <= x):
-  ( x | repeated_repeated_div i n) -> (x | n).
+  (x | repeated_repeated_div i n) -> (x | n).
 Proof.
   assert (0 <= i) by lia. revert H0. pattern i. apply Z_lt_induction; auto; intros. clear H2 i.
   rewrite repeated_repeated_div_equation in H4. destruct Z_le_dec in H4; try lia. destruct Z_le_dec in H4; auto.
@@ -458,7 +458,7 @@ Proof.
   intros. apply not_prime_divide in H1; try lia.
   destruct H1 as [k [H1 H3]]. destruct H3. assert (Z.divide k (repeated_repeated_div i n)).
     { exists x; lia. }
-    assert (Z.divide x ( repeated_repeated_div i n)).
+    assert (Z.divide x (repeated_repeated_div i n)).
     { exists k; lia. }
     apply (repeated_repeated_div_thm10 i n H H0) in H4; try lia.
     apply (repeated_repeated_div_thm10 i n H H0) in H5; try nia.
