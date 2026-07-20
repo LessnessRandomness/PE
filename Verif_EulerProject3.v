@@ -917,6 +917,20 @@ Proof.
       pose proof (rep_div_le_self n 2 H1). lia.
     - unfold new_highest. destruct Zdivide_dec; [destruct Z_le_dec |]; try lia.
   + autorewrite with norm.
-    set (rep_rep_div 3 n) as W.
+    assert (new_highest 3 (rep_div n 2) (new_highest 2 n 1) =
+            greatest_factor n 3).
+    { unfold new_highest, greatest_factor. rewrite prime_factors_equation.
+      simpl. rewrite prime_factors_equation. simpl.
+      rewrite prime_factors_equation. simpl.
+      rewrite rep_rep_div_by_one; try lia. rewrite rep_rep_div_by_two; try lia.
+      destruct (Z_le_dec 1 n); try lia.
+      destruct (Zdivide_dec 2 n); simpl; destruct Zdivide_dec; auto. }
+    assert (rep_div (rep_div n 2) 3 = rep_rep_div n 3).
+    { rewrite rep_rep_div_equation; simpl. destruct Z_le_dec; try lia.
+      rewrite rep_rep_div_by_two; lia. }
+    rewrite H2, H3.
+    assert (rep_rep_div n 3 = rep_rep_div n 4).
+    { rewrite (rep_rep_div_by_not_prime n 4) with (f2 := 3); try lia.
+      apply (not_prime_aux 2 2); try lia. }
     admit.
 Admitted.
