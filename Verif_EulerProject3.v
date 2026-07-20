@@ -494,7 +494,7 @@ Lemma div_at_least_one (n f : Z) (Hn : 1 <= n) (Hf : 2 <= f) (H : (f | n)) :
 Proof. destruct H. rewrite H, Z_div_mult; lia. Qed.
 
 Function find (p : Z * Z) (highest : Z) (Hf : 2 <= snd p)
-  { measure (fun p => Z.to_nat (Z.sqrt (fst p) + 1 - snd p)) p } : Z * Z :=
+  { measure (fun p => Z.to_nat (fst p - snd p)) p } : Z * Z :=
   if Z_le_dec (snd p * snd p) (fst p)
   then let temp1 := rep_div' (fst p) (snd p) highest in
        let temp2 := rep_div' (fst temp1) (snd p + 2) (snd temp1) in
@@ -502,11 +502,9 @@ Function find (p : Z * Z) (highest : Z) (Hf : 2 <= snd p)
   else (fst p, highest).
 Proof.
   intros. destruct p as [n f]. simpl in *. assert (1 <= n) by nia.
-  pose proof (rep_div_le_self (rep_div n f) (f + 2)
-    (one_le_rep_div n f H)).
-  pose proof (rep_div_le_self n f H).
-  assert (rep_div (rep_div n f) (f + 2) <= n) by lia. clear H0 H1 teq.
-  apply Z.sqrt_le_mono in H2. rewrite Z.sqrt_le_square in anonymous; lia.
+  pose proof (rep_div_le_self (rep_div n f) (f + 2) (one_le_rep_div n f H)).
+  pose proof (rep_div_le_self n f H). pose proof (Z.le_trans _ _ _ H0 H1).
+  nia.
 Qed.
 
 Definition biggestDivisor (n : Z) : Z :=
