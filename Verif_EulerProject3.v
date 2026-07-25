@@ -281,6 +281,19 @@ Proof.
     destruct Zdivide_dec; auto. apply Z.divide_pos_le in d; try lia.
 Qed.
 
+Lemma rep_rep_div_nonincreasing (n a b : Z) (Hn : 1 <= n) (Ha : 1 <= a)
+  (Hb : a <= b) : rep_rep_div n b <= rep_rep_div n a.
+Proof.
+  assert (0 <= b) by lia. revert Hb. pattern b.
+  apply Z_lt_induction; auto; intros. clear H b.
+  assert (a = x \/ a < x) by lia. destruct H.
+  + rewrite H. lia.
+  + rewrite rep_rep_div_equation. repeat destruct Z_le_dec; try lia.
+    pose proof (H0 (x - 1) ltac:(lia) ltac:(lia)).
+    pose proof (one_le_rep_rep_div n (x - 1) Hn ltac:(lia)).
+    pose proof (rep_div_le_self (rep_rep_div n (x - 1)) x); try lia.
+Qed.
+
 (* lemmas about `prime_factors` *)
 
 Lemma prime_factors_all_prime (n k p : Z) (Hn : 1 <= n) (Hk : 1 <= k)
@@ -362,6 +375,24 @@ Definition greatest_factor (n k : Z) : Z :=
   | [] => 1
   | x :: _ => x
   end.
+
+Lemma one_le_greatest_factor (n k : Z) (Hn : 1 <= n) (Hk : 1 <= k) :
+  1 <= greatest_factor n k.
+Proof.
+  unfold greatest_factor. pose proof (prime_factors_all_prime n k).
+  remember (prime_factors n k) as W. destruct W; try lia.
+  assert (In z (z :: W)) by (simpl; auto). apply H in H0; try lia.
+  destruct H0. lia.
+Qed.
+
+Lemma greatest_factor_le_self (n k : Z) (Hn : 1 <= n) (Hk : 2 <= k) :
+  greatest_factor n k <= n.
+Proof.
+  unfold greatest_factor. 
+  pose proof (prime_factors_head_greatest_prime_factor n k Hn ltac:(lia)).
+  remember (prime_factors n k) as W. destruct W; try lia.
+  destruct H. destruct H as [H [H1 H2]]. apply Z.divide_pos_le in H2; lia.
+Qed.
 
 Lemma greatest_factor_le_limit (n k : Z) (Hn : 1 <= n) (Hk : 2 <= k) :
   greatest_factor n k <= k.
@@ -597,7 +628,6 @@ Lemma TTT (n i : Z) (Hn : 2 <= n) (Hi : 0 <= i) (M : nat)
   let F := find (rep_rep_div n (6 * i + 3), 6 * i + 5)
            (greatest_factor n (6 * i + 3)) (aux n i Hi) in
   let W := greatest_factor n n in
-  let W' := greatest_factor (rep_div n W) (rep_div n W) in
   if Z.eq_dec (fst F) 1 then W = snd F else W = fst F.
 Proof.
   revert n Hn i Hi HM. pattern M. apply (@well_founded_induction _ lt lt_wf).
@@ -715,25 +745,43 @@ Proof.
           ltac:(lia) ltac:(lia) n2 ltac:(lia)). lia.
 Qed.
 
+Lemma biggestDivisor_as_greatest_factor (n : Z) (Hn : 2 <= n) :
+  biggestDivisor n = greatest_factor n n.
+Proof.
+  pose proof (TTT n 0 Hn ltac:(lia) (Z.to_nat (n - 0)) ltac:(auto)).
+  unfold biggestDivisor. rewrite (temp2_lemma n ltac:(lia)). simpl in *.
+  assert (forall P Q, (let (n3, highest3) :=
+    find (rep_rep_div n 3, 5) (greatest_factor n 3) P in
+    if Z.eq_dec n3 1 then highest3 else n3) =
+    let W := find (rep_rep_div n 3, 5) (greatest_factor n 3) Q in
+    if Z.eq_dec (fst W) 1 then snd W else fst W).
+  { intros. remember (find (rep_rep_div n 3, 5) (greatest_factor n 3) P) as A.
+    remember (find (rep_rep_div n 3, 5) (greatest_factor n 3) Q) as B.
+    assert (A = B). { rewrite HeqA, HeqB. apply aux1; auto. }
+    rewrite H0. destruct B. simpl. auto. }
+  destruct Z.eq_dec in H.
+  + erewrite H0, H. simpl. destruct Z.eq_dec; tauto.
+  + erewrite H0, H. simpl. destruct Z.eq_dec; try tauto. tauto.
+Qed.
+
+
 Lemma main_result (n : Z) (Hn : 2 <= n) :
   IsGreatest (fun d => prime d /\ (d | n)) (biggestDivisor n).
 Proof.
-  assert (biggestDivisor n = greatest_factor n n).
-  { pose proof (TTT n 0 Hn ltac:(lia) (Z.to_nat (n - 0)) ltac:(auto)).
-    unfold biggestDivisor. rewrite (temp2_lemma n ltac:(lia)). simpl in *.
-    assert (forall P Q, (let (n3, highest3) :=
-      find (rep_rep_div n 3, 5) (greatest_factor n 3) P in
-      if Z.eq_dec n3 1 then highest3 else n3) =
-      let W := find (rep_rep_div n 3, 5) (greatest_factor n 3) Q in
-      if Z.eq_dec (fst W) 1 then snd W else fst W).
-    { intros. remember (find (rep_rep_div n 3, 5) (greatest_factor n 3) P) as A.
-      remember (find (rep_rep_div n 3, 5) (greatest_factor n 3) Q) as B.
-      assert (A = B). { rewrite HeqA, HeqB. apply aux1; auto. }
-      rewrite H0. destruct B. simpl. auto. }
-    destruct Z.eq_dec in H.
-    + erewrite H0, H. simpl. destruct Z.eq_dec; tauto.
-    + erewrite H0, H. simpl. destruct Z.eq_dec; try tauto. tauto. }
-  rewrite H. apply greatest_factor_is_greatest; auto.
+  rewrite biggestDivisor_as_greatest_factor; try lia.
+  apply greatest_factor_is_greatest; auto.
+Qed.
+
+Lemma useful_lemma (n i : Z) (Hn : 2 <= n) (Hi : 0 <= i) :
+  rep_rep_div n (6 * i + 3) < (6 * i + 5) * (6 * i + 5) ->
+  if Z.eq_dec (rep_rep_div n (6 * i + 3)) 1
+  then biggestDivisor n = greatest_factor n (6 * i + 3)
+  else biggestDivisor n = rep_rep_div n (6 * i + 3).
+Proof.
+  rewrite biggestDivisor_as_greatest_factor; try auto.
+  intros. pose proof (TTT n i Hn Hi (Z.to_nat (n - i)) ltac:(auto)).
+  rewrite find_equation in H0. simpl in H0. destruct Z_le_dec in H0; try lia.
+  simpl in H0. auto.
 Qed.
 
 
@@ -765,14 +813,16 @@ Definition find_spec: ident * funspec :=
 DECLARE _find
   WITH gv: globals, n: Z, h: Z
   PRE [ tulong ]
-    PROP (2 <= n <= 1000000000000; 0 <= h <= Int64.max_unsigned)   (* 1000000000000 instead of Int64.max_unsigned *)
+    PROP (2 <= n <= 4294967291)
     PARAMS (Vlong (Int64.repr n))
     GLOBALS (gv)
     SEP (data_at Ews tulong (Vlong (Int64.repr h)) (gv _highest))
   POST [ tulong ]
-    PROP ()
+    EX i : Z,
+    PROP (0 <= i /\ rep_rep_div n (6 * i + 3) < (6 * i + 5) * (6 * i + 5))
     RETURN (Vlong (Int64.repr (biggestDivisor n)))
-    SEP ().
+    SEP (data_at Ews tulong
+      (Vlong (Int64.repr (greatest_factor n (6 * i + 3)))) (gv _highest)).
 
 
 Definition Gprog := [find_spec; factorize_spec].
@@ -906,9 +956,52 @@ Proof.
         subst. simpl (f ^ 0) in H13. rewrite Z.div_1_r in H13. tauto.
 Qed.
 
+
+Lemma find_proof_aux00 (n i : Z) (Hn : 1 <= n) (Hi : 0 <= i) :
+  (new_highest (6 * i + 7) (rep_div (rep_rep_div n (6 * i + 3)) (6 * i + 5))
+  (new_highest (6 * i + 5) (rep_rep_div n (6 * i + 3)) (greatest_factor n (6 * i + 3))) =
+  greatest_factor n (6 * i + 9)).
+Proof.
+  assert (~ prime (6 * i + 9)). { intro. apply (not_prime_aux 3 (2 * i + 3)) in H; try lia. }
+  assert (~ prime (6 * i + 8)). { intro. apply (not_prime_aux 2 (3 * i + 4)) in H0; try lia. }
+  assert (~ prime (6 * i + 6)). { intro. apply (not_prime_aux 2 (3 * i + 3)) in H1; try lia. }
+  assert (~ prime (6 * i + 4)). { intro. apply (not_prime_aux 2 (3 * i + 2)) in H2; try lia. }
+  assert (rep_div (rep_rep_div n (6 * i + 3)) (6 * i + 5) = rep_rep_div n (6 * i + 5)).
+  { rewrite (rep_rep_div_equation n (6 * i + 5)). repeat destruct Z_le_dec; try lia.
+    f_equal. replace (6 * i + 5 - 1) with (6 * i + 4) by ring.
+    rewrite (rep_rep_div_by_not_prime n (6 * i + 4) (6 * i + 3)); try lia. auto. }
+  assert (greatest_factor n (6 * i + 9) = greatest_factor n (6 * i + 7)).
+  { rewrite (greatest_factor_by_not_prime n (6 * i + 9) (6 * i + 8)); try lia; auto.
+    rewrite (greatest_factor_by_not_prime n (6 * i + 8) (6 * i + 7)); try lia; auto. }
+  assert (rep_rep_div n (6 * i + 3) = rep_rep_div n (6 * i + 4)).
+  { rewrite (rep_rep_div_by_not_prime n (6 * i + 4) (6 * i + 3)); try lia. auto. }
+  assert (rep_rep_div n (6 * i + 5) = rep_rep_div n (6 * i + 6)).
+  { rewrite (rep_rep_div_by_not_prime n (6 * i + 6) (6 * i + 5)); try lia; auto. }
+  pose proof (greatest_factor_le_limit n (6 * i + 3)).
+  rewrite H3, H4. unfold new_highest.
+  repeat destruct Zdivide_dec; try repeat destruct Z_le_dec; try lia.
+  + rewrite H6, rep_rep_div_main_lemma in d; try lia.
+    rewrite greatest_factor_eq; try lia; tauto.
+  + rewrite H6, rep_rep_div_main_lemma in d; try lia.
+    rewrite greatest_factor_eq; try lia; tauto.
+  + rewrite H5, rep_rep_div_main_lemma in d; try lia.
+    rewrite H6, rep_rep_div_main_lemma in n0; try lia.
+    rewrite greatest_factor_by_not_prime_or_not_dvd with (k2 := 6 * i + 6); try lia; auto.
+    rewrite greatest_factor_by_not_prime with (k2 := 6 * i + 5); try lia; auto.
+    rewrite greatest_factor_eq; try lia; tauto.
+  + rewrite H5, rep_rep_div_main_lemma in n1; try lia.
+    rewrite H6, rep_rep_div_main_lemma in n0; try lia.
+    rewrite (greatest_factor_by_not_prime_or_not_dvd n (6 * i + 7) (6 * i + 6)); try lia; auto.
+    rewrite (greatest_factor_by_not_prime n (6 * i + 6) (6 * i + 5)); try lia; auto.
+    rewrite (greatest_factor_by_not_prime_or_not_dvd n (6 * i + 5) (6 * i + 4)); try lia; auto.
+    rewrite (greatest_factor_by_not_prime n (6 * i + 4) (6 * i + 3)); try lia; auto.
+Qed.
+
+
 Lemma find_proof: semax_body Vprog Gprog f_find find_spec.
 Proof.
   assert (Int64.max_unsigned = 18446744073709551615) as HH by auto.
+  assert (H : 4294967291 <= Int64.max_unsigned) by lia.
   start_function. assert (1 <= n) by lia. forward. forward_call. forward_call.
   + split.
     - pose proof (one_le_rep_div n 2 H1).
@@ -930,5 +1023,49 @@ Proof.
     assert (rep_rep_div n 3 = rep_rep_div n 4).
     { rewrite (rep_rep_div_by_not_prime n 4) with (f2 := 3); try lia.
       apply (not_prime_aux 2 2); try lia. }
-    admit.
+    forward_if (
+      EX (i: Z),
+        PROP (0 <= i /\ rep_rep_div n (6 * i + 3) < (6 * i + 5) * (6 * i + 5))
+        LOCAL (temp _n (Vlong (Int64.repr (rep_rep_div n (6 * i + 3))));
+               gvars gv)
+        SEP (data_at Ews tulong (Vlong (Int64.repr (
+          greatest_factor n (6 * i + 3)
+        ))) (gv _highest))
+    ).
+    - (* forward_loop (
+        EX (i : Z),
+          PROP (0 <= i)
+          LOCAL (temp _i (Vlong (Int64.repr (6 * i + 5)));
+                 temp _n (Vlong (Int64.repr (rep_rep_div n (6 * i + 3))));
+                 gvars gv)
+          SEP (data_at Ews tulong (Vlong (Int64.repr (
+                 greatest_factor n (6 * i + 3)
+          ))) (gv _highest))
+      ). *)
+      admit.
+    - forward. Exists 0.  autorewrite with norm. entailer!.
+      simpl (Int64.unsigned (Int64.repr 5)) in H5.
+      rewrite Int64.unsigned_repr in H5; try lia.
+      pose proof (one_le_rep_rep_div n 3). pose proof (rep_rep_div_le_self n 3).
+      lia.
+    - Intros i.
+      forward_if (
+          PROP ()
+          LOCAL (temp _n (Vlong (Int64.repr (rep_rep_div n (6 * i + 3))));
+                 temp _t'5 (Vlong (Int64.repr (biggestDivisor n)));
+                 gvars gv)
+          SEP (data_at Ews tulong (Vlong (Int64.repr
+                (greatest_factor n (6 * i + 3)))) (gv _highest))).
+        ++ assert (rep_rep_div n (6 * i + 3) = 1).
+           { apply Int64.same_if_eq in H6.
+             apply repr_inj_unsigned64 in H6; try lia.
+             pose proof (one_le_rep_rep_div n (6 * i + 3)).
+             pose proof (rep_rep_div_le_self n (6 * i + 3)). lia. }
+           pose proof (useful_lemma n i ltac:(lia) ltac:(lia)).
+           forward. forward. entailer!. do 2 f_equal. destruct Z.eq_dec; lia.
+        ++ assert (rep_rep_div n (6 * i + 3) <> 1) by congruence.
+           pose proof (useful_lemma n i ltac:(lia) ltac:(lia)).
+           forward. entailer!. do 2 f_equal. pose proof (H8 (proj2 H5)).
+           destruct Z.eq_dec in H11; lia.
+        ++ forward. Exists i. entailer!.
 Admitted.
