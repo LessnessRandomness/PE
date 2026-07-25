@@ -813,7 +813,7 @@ Definition find_spec: ident * funspec :=
 DECLARE _find
   WITH gv: globals, n: Z, h: Z
   PRE [ tulong ]
-    PROP (2 <= n <= 4294967291)
+    PROP (2 <= n <= 18446743979220271225)
     PARAMS (Vlong (Int64.repr n))
     GLOBALS (gv)
     SEP (data_at Ews tulong (Vlong (Int64.repr h)) (gv _highest))
@@ -997,11 +997,30 @@ Proof.
     rewrite (greatest_factor_by_not_prime n (6 * i + 4) (6 * i + 3)); try lia; auto.
 Qed.
 
+Lemma find_proof_aux01 (n i : Z) (Hn : 1 <= n) (Hi : 0 <= i) :
+  rep_rep_div n (6 * i + 9) =
+  rep_div (rep_div (rep_rep_div n (6 * i + 3)) (6 * i + 5)) (6 * i + 7).
+Proof.
+  assert (~ prime (6 * i + 9)). { intro. apply (not_prime_aux 3 (2 * i + 3)) in H; try lia. }
+  assert (~ prime (6 * i + 8)). { intro. apply (not_prime_aux 2 (3 * i + 4)) in H0; try lia. }
+  assert (~ prime (6 * i + 6)). { intro. apply (not_prime_aux 2 (3 * i + 3)) in H1; try lia. }
+  assert (~ prime (6 * i + 4)). { intro. apply (not_prime_aux 2 (3 * i + 2)) in H2; try lia. }
+  rewrite (rep_rep_div_by_not_prime n (6 * i + 9) (6 * i + 8)); try lia; auto.
+  rewrite (rep_rep_div_by_not_prime n (6 * i + 8) (6 * i + 7)); try lia; auto.
+  rewrite rep_rep_div_equation. repeat destruct Z_le_dec; try lia. f_equal.
+  replace (6 * i + 7 - 1) with (6 * i + 6) by ring.
+  rewrite (rep_rep_div_by_not_prime n (6 * i + 6) (6 * i + 5)); try lia; auto.
+  rewrite rep_rep_div_equation. repeat destruct Z_le_dec; try lia. f_equal.
+  replace (6 * i + 5 - 1) with (6 * i + 4) by ring.
+  rewrite (rep_rep_div_by_not_prime n (6 * i + 4) (6 * i + 3)); try lia; auto.
+Qed.
+  
 
 Lemma find_proof: semax_body Vprog Gprog f_find find_spec.
 Proof.
   assert (Int64.max_unsigned = 18446744073709551615) as HH by auto.
-  assert (H : 4294967291 <= Int64.max_unsigned) by lia.
+  assert (H : 18446743979220271225 <= Int64.max_unsigned) by lia.
+  remember 18446743979220271225 as n_max.
   start_function. assert (1 <= n) by lia. forward. forward_call. forward_call.
   + split.
     - pose proof (one_le_rep_div n 2 H1).
@@ -1032,18 +1051,41 @@ Proof.
           greatest_factor n (6 * i + 3)
         ))) (gv _highest))
     ).
-    - (* forward_loop (
+    - forward_loop (
         EX (i : Z),
-          PROP (0 <= i)
+          PROP (0 <= i /\ (6 * i + 5) * (6 * i + 5) <= Int64.max_unsigned)
           LOCAL (temp _i (Vlong (Int64.repr (6 * i + 5)));
                  temp _n (Vlong (Int64.repr (rep_rep_div n (6 * i + 3))));
                  gvars gv)
           SEP (data_at Ews tulong (Vlong (Int64.repr (
                  greatest_factor n (6 * i + 3)
           ))) (gv _highest))
-      ). *)
-      admit.
-    - forward. Exists 0.  autorewrite with norm. entailer!.
+      ).
+      * forward. Exists 0. entailer!.
+      * Intros i.
+        pose proof (one_le_rep_rep_div n (6 * i + 3)).
+        pose proof (rep_rep_div_le_self n (6 * i + 3)).
+        pose proof (one_le_greatest_factor n (6 * i + 3)).
+        pose proof (greatest_factor_le_self n (6 * i + 3)).
+        forward_if.
+        ++ abbreviate_semax. forward_call. forward_call; [repeat split; try lia |].
+           -- apply one_le_rep_div; lia.
+           -- pose proof (rep_div_le_self (rep_rep_div n (6 * i + 3)) (6 * i + 5)).
+              lia.
+           -- unfold new_highest. destruct Zdivide_dec; [destruct Z_le_dec |]; try lia.
+           -- unfold new_highest. destruct Zdivide_dec; [destruct Z_le_dec |]; try lia.
+           -- forward. Exists (i + 1). entailer!; [repeat split; try lia |].
+              ** apply ltu_repr_false64 in H11; nia.
+              ** do 2 f_equal; ring.
+              ** replace (6 * (i + 1) + 3) with (6 * i + 9) by ring.
+                 replace (6 * i + 5 + 2) with (6 * i + 7) by ring.
+                 do 2 f_equal. apply find_proof_aux01; lia.
+              ** replace (6 * (i + 1) + 3) with (6 * i + 9) by ring.
+                 replace (6 * i + 5 + 2) with (6 * i + 7) by ring.
+                 rewrite find_proof_aux00; try lia. auto.
+        ++ forward. entailer!. Exists i. entailer!. split. lia.
+           apply ltu_repr64 in H11; lia.
+    - forward. Exists 0. autorewrite with norm. entailer!.
       simpl (Int64.unsigned (Int64.repr 5)) in H5.
       rewrite Int64.unsigned_repr in H5; try lia.
       pose proof (one_le_rep_rep_div n 3). pose proof (rep_rep_div_le_self n 3).
@@ -1068,4 +1110,4 @@ Proof.
            forward. entailer!. do 2 f_equal. pose proof (H8 (proj2 H5)).
            destruct Z.eq_dec in H11; lia.
         ++ forward. Exists i. entailer!.
-Admitted.
+Qed.
