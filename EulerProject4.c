@@ -15,13 +15,14 @@ bool is_palindrome(uint32_t n) {
 }
 
 uint32_t find() {
-    uint32_t max_value = 100000;
-    for (uint16_t x = 990; max_value < x * 999; x -= 11) {
-        for (uint32_t n = x * 999; max_value < n; n -= x) {
+    uint32_t max_value = 100000, t = 989010;
+    for (uint16_t x = 990; max_value < t; x -= 11) {
+        for (uint32_t n = t; max_value < n; n -= x) {
             if (is_palindrome(n)) {
                 max_value = n;
             }
         }
+        t -= 10989;
     }
     return max_value;
 }
