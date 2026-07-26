@@ -80,6 +80,7 @@ Definition _is_palindrome : ident := $"is_palindrome".
 Definition _main : ident := $"main".
 Definition _max_value : ident := $"max_value".
 Definition _n : ident := $"n".
+Definition _t : ident := $"t".
 Definition _x : ident := $"x".
 Definition _t'1 : ident := 128%positive.
 
@@ -126,50 +127,54 @@ Definition f_is_palindrome := {|
 |}.
 
 Definition f_find := {|
-  fn_return := tint;
+  fn_return := tuint;
   fn_callconv := cc_default;
   fn_params := nil;
   fn_vars := nil;
-  fn_temps := ((_max_value, tuint) :: (_x, tushort) :: (_n, tuint) ::
-               (_t'1, tbool) :: nil);
+  fn_temps := ((_max_value, tuint) :: (_t, tuint) :: (_x, tushort) ::
+               (_n, tuint) :: (_t'1, tbool) :: nil);
   fn_body :=
 (Ssequence
   (Sset _max_value (Econst_int (Int.repr 100000) tint))
   (Ssequence
+    (Sset _t (Econst_int (Int.repr 989010) tint))
     (Ssequence
-      (Sset _x (Ecast (Econst_int (Int.repr 990) tint) tushort))
-      (Sloop
-        (Ssequence
-          (Sifthenelse (Ebinop Olt (Etempvar _max_value tuint)
-                         (Ebinop Omul (Etempvar _x tushort)
-                           (Econst_int (Int.repr 999) tint) tint) tint)
-            Sskip
-            Sbreak)
+      (Ssequence
+        (Sset _x (Ecast (Econst_int (Int.repr 990) tint) tushort))
+        (Sloop
           (Ssequence
-            (Sset _n
-              (Ebinop Omul (Etempvar _x tushort)
-                (Econst_int (Int.repr 999) tint) tint))
-            (Sloop
+            (Sifthenelse (Ebinop Olt (Etempvar _max_value tuint)
+                           (Etempvar _t tuint) tint)
+              Sskip
+              Sbreak)
+            (Ssequence
               (Ssequence
-                (Sifthenelse (Ebinop Olt (Etempvar _max_value tuint)
-                               (Etempvar _n tuint) tint)
-                  Sskip
-                  Sbreak)
-                (Ssequence
-                  (Scall (Some _t'1)
-                    (Evar _is_palindrome (Tfunction (tuint :: nil) tbool
-                                           cc_default))
-                    ((Etempvar _n tuint) :: nil))
-                  (Sifthenelse (Etempvar _t'1 tbool)
-                    (Sset _max_value (Etempvar _n tuint))
-                    Sskip)))
-              (Sset _n
-                (Ebinop Osub (Etempvar _n tuint) (Etempvar _x tushort) tuint)))))
-        (Sset _x
-          (Ecast
-            (Ebinop Osub (Etempvar _x tushort)
-              (Econst_int (Int.repr 11) tint) tint) tushort))))
-    (Sreturn (Some (Etempvar _max_value tuint)))))
+                (Sset _n (Etempvar _t tuint))
+                (Sloop
+                  (Ssequence
+                    (Sifthenelse (Ebinop Olt (Etempvar _max_value tuint)
+                                   (Etempvar _n tuint) tint)
+                      Sskip
+                      Sbreak)
+                    (Ssequence
+                      (Scall (Some _t'1)
+                        (Evar _is_palindrome (Tfunction (tuint :: nil) tbool
+                                               cc_default))
+                        ((Etempvar _n tuint) :: nil))
+                      (Sifthenelse (Etempvar _t'1 tbool)
+                        (Sset _max_value (Etempvar _n tuint))
+                        Sskip)))
+                  (Sset _n
+                    (Ebinop Osub (Etempvar _n tuint) (Etempvar _x tushort)
+                      tuint))))
+              (Sset _t
+                (Ebinop Osub (Etempvar _t tuint)
+                  (Econst_int (Int.repr 10989) tint) tuint))))
+          (Sset _x
+            (Ecast
+              (Ebinop Osub (Etempvar _x tushort)
+                (Econst_int (Int.repr 11) tint) tint) tushort))))
+      (Sreturn (Some (Etempvar _max_value tuint))))))
 |}.
 
 Definition f_main := {|
@@ -177,12 +182,12 @@ Definition f_main := {|
   fn_callconv := cc_default;
   fn_params := nil;
   fn_vars := nil;
-  fn_temps := ((_t'1, tint) :: nil);
+  fn_temps := ((_t'1, tuint) :: nil);
   fn_body :=
 (Ssequence
   (Ssequence
-    (Scall (Some _t'1) (Evar _find (Tfunction nil tint cc_default)) nil)
-    (Sreturn (Some (Etempvar _t'1 tint))))
+    (Scall (Some _t'1) (Evar _find (Tfunction nil tuint cc_default)) nil)
+    (Sreturn (Some (Etempvar _t'1 tuint))))
   (Sreturn (Some (Econst_int (Int.repr 0) tint))))
 |}.
 

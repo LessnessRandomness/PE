@@ -27,7 +27,8 @@ uint32_t find() {
     return max_value;
 }
 
-uint32_t main() {
+int main() {
     return find();
 }
+
 
