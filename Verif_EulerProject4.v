@@ -186,7 +186,7 @@ Qed.
 
 
 
-Definition good_palindrome (b N n1 n2 : nat) (Hb : 2 <= b) (HN : 1 <= N) :=
+Definition good_palindrome (b N : nat) (Hb : 2 <= b) (HN : 1 <= N) (n1 n2 : nat) :=
   length (digits (n1 * n2) b) = 2 * N /\
   length (digits n1 b) = N /\ length (digits n2 b) = N /\
   is_palindrome (n1 * n2) b.
@@ -588,19 +588,38 @@ Definition Vprog : varspecs. mk_varspecs prog. Defined.
 
 Definition is_palindrome_spec: ident * funspec :=
 DECLARE _is_palindrome
-  WITH gv: globals, n: nat
+  WITH n : nat
   PRE [ tuint ]
     PROP (10 ^ 5 <= n < 10 ^ 6)
     PARAMS (Vint (Int.repr (Z.of_nat n)))
-    GLOBALS (gv)
+    GLOBALS ()
     SEP ()
   POST [ tbool ]
     PROP ()
     RETURN (Vint (Int.repr (if is_palindrome_dec n 10 then 1 else 0)))
     SEP ().
 
+Print good_palindrome.
+Check (good_palindrome 10 3).
 
-Definition Gprog := [is_palindrome_spec].
+Definition find_spec: ident * funspec :=
+DECLARE _find
+  WITH n : nat
+  PRE []
+    PROP ()
+    PARAMS ()
+    GLOBALS ()
+    SEP ()
+  POST [ tuint]
+    PROP (n = 10 ^ 5 \/
+          IsGreatest
+          (fun x => exists x1 x2, good_palindrome 10 3 ltac:(lia) ltac:(lia) x1 x2)
+          n)
+    RETURN (Vint (Int.repr (Z.of_nat n)))
+    SEP ().
+
+
+Definition Gprog := [is_palindrome_spec; find_spec].
 
 
 Lemma is_palindrome_proof_aux00 (a b c : nat) (Ha : 1 <= a < 10)
@@ -899,3 +918,7 @@ Proof.
 Qed.
 
 
+Lemma find_proof: semax_body Vprog Gprog f_find find_spec.
+Proof.
+  start_function. forward. forward. (* forward_loop *)
+Admitted.
