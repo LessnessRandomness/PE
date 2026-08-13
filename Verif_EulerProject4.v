@@ -228,7 +228,7 @@ Function inner_loop n max_value x b (hx : 0 < x) { measure Z.to_nat n } :=
   else if Z_lt_dec n x
        then max_value
        else inner_loop (n - x) max_value x b hx.
-Proof. simpl. lia. Defined.
+Proof. simpl. lia. Qed.
 
 Lemma outer_loop_aux (b N x : Z) (hN : 1 <= N) :
   2 <= b -> b ^ (N - 1) <= x -> 0 < x.
@@ -244,7 +244,7 @@ Function outer_loop (x max_value t b N : Z) (hb : 2 <= b) (hN : 1 <= N) { measur
   else max_value.
 Proof.
   simpl. intros. pose proof (Z.pow_pos_nonneg b (N - 1)); try lia.
-Defined.
+Qed.
 
 Definition result (b N : Z) (hb : 2 <= b) (hN : 1 <= N) :=
   let y := b ^ N - 1 in
@@ -636,6 +636,16 @@ Require Import EulerProject4.
 #[export] Instance CompSpecs : compspecs. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
 
+Lemma one_le_three : 1 <= 3. Proof. lia. Qed.
+Lemma two_le_ten : 2 <= 10. Proof. lia. Qed.
+Lemma eleven_is_prime : prime 11.
+Proof.
+  apply prime_alt. constructor; try lia. intros. intro.
+  destruct H0. assert (In n [2;3;4;5;6;7;8;9;10])%Z by (simpl; lia).
+  simpl in H1. destruct H1 as [H1|[H1|[H1|[H1|[H1|[H1|[H1|[H1|[H1|H1]]]]]]]]]; try lia.
+Qed.
+
+
 Definition is_palindrome_spec: ident * funspec :=
 DECLARE _is_palindrome
   WITH n : Z
@@ -651,18 +661,15 @@ DECLARE _is_palindrome
 
 Definition find_spec: ident * funspec :=
 DECLARE _find
-  WITH n : Z
+  WITH t : unit
   PRE []
     PROP ()
     PARAMS ()
     GLOBALS ()
     SEP ()
-  POST [ tuint]
-    PROP (n = 10 ^ 5 \/
-          IsGreatest 
-          (fun x => is_good_palindrome x 10 3 ltac:(lia))
-          n)
-    RETURN (Vint (Int.repr n))
+  POST [ tuint ]
+    PROP ()
+    RETURN (Vint (Int.repr (result 10 3 two_le_ten one_le_three)))
     SEP ().
 
 
@@ -730,8 +737,6 @@ Proof.
   rewrite Z.mul_comm, Z.div_add_l; try lia.
   rewrite Z.div_small; try lia.
 Qed.
-
-
 
 
 
@@ -941,16 +946,169 @@ Proof.
            subst f e d. rewrite H4. auto.
 Qed.
 
-Lemma one_le_three : 1 <= 3. Proof. lia. Qed.
-Lemma two_le_ten : 2 <= 10. Proof. lia. Qed.
-Lemma eleven_is_prime : prime 11.
+
+
+Lemma inner_loop_stop (n m x b : Z) (hx : 0 < x) (hn : 0 <= n) :
+  n <= m -> inner_loop n m x b hx = m.
 Proof.
-  apply prime_alt. constructor; try lia. intros. intro.
-  destruct H0. assert (In n [2;3;4;5;6;7;8;9;10])%Z by (simpl; lia).
-  simpl in H1. destruct H1 as [H1|[H1|[H1|[H1|[H1|[H1|[H1|[H1|[H1|H1]]]]]]]]]; try lia.
+  pose proof hn. revert m hn. pattern n. apply Z_lt_induction; auto; intros.
+  clear H n. rewrite inner_loop_equation. destruct sumbool_and; try lia.
+  destruct (Z_lt_dec x0 x); try lia. apply H0; lia.
 Qed.
+
+Lemma inner_loop_found (n m x b : Z) (hx : 0 < x)
+  (hlt : m < n) (hp : is_palindrome n b) :
+  inner_loop n m x b hx = n.
+Proof.
+  rewrite inner_loop_equation.
+  destruct sumbool_and; try tauto; try lia.
+Qed.
+
+Lemma inner_loop_miss (n m x b : Z) (hx : 0 < x)
+  (hlt : m < n) (hnp : ~ is_palindrome n b) (hnx : x <= n) :
+  inner_loop n m x b hx = inner_loop (n - x) m x b hx.
+Proof.
+  rewrite inner_loop_equation.
+  destruct sumbool_and; try tauto.
+  destruct (Z_lt_dec n x); try lia.
+Qed.
+
+Lemma result_10_3_unfold :
+  result 10 3 two_le_ten one_le_three =
+  outer_loop 990 100000 989010 10 3 two_le_ten one_le_three.
+Proof.
+  unfold result. f_equal.
+Qed.
+
 
 Lemma find_proof: semax_body Vprog Gprog f_find find_spec.
 Proof.
-  start_function. forward. forward. 
+  start_function. forward. forward.
+  forward_loop (
+    EX R x m t : Z,
+    PROP (
+      R = result 10 3 two_le_ten one_le_three /\
+      R = outer_loop x m t 10 3 two_le_ten one_le_three /\
+      t = (x * 999)%Z /\
+      0 < x /\ x <= 990 /\
+      0 <= t /\ t <= 989010 /\
+      100000 <= m /\ m <= 989010
+    )
+    LOCAL (
+      temp _max_value (Vint (Int.repr m));
+      temp _t         (Vint (Int.repr t));
+      temp _x         (Vint (Int.repr x))
+    )
+    SEP ()
+  )
+  break: (
+    EX R x m t : Z,
+    PROP (
+      R = result 10 3 two_le_ten one_le_three /\
+      R = m /\
+      t = (x * 999)%Z /\
+      0 <= x /\ x <= 990 /\
+      0 <= t /\ t <= 989010 /\
+      100000 <= m /\ m <= 989010
+    )
+    LOCAL (
+      temp _max_value (Vint (Int.repr m));
+      
+      temp _t         (Vint (Int.repr t));
+      temp _x         (Vint (Int.repr x))
+    )
+    SEP ()
+  ).
+  + forward. Exists (result 10 3 two_le_ten one_le_three) 990 100000 989010.
+    rewrite result_10_3_unfold. entailer!.
+  + Intros R x m t0. forward_if.
+    - forward_loop (
+        EX Ri n mcur : Z,
+        PROP (
+          Ri = inner_loop t0 m x 10 H2 /\
+          Ri = inner_loop n mcur x 10 H2 /\
+          0 <= n /\ n <= t0 /\
+          0 < x /\ x <= 990 /\
+          0 <= t0 /\ t0 <= 989010 /\
+          100000 <= mcur /\ mcur <= 989010
+        )
+        LOCAL (
+          temp _n         (Vint (Int.repr n));
+          temp _max_value (Vint (Int.repr mcur));
+          temp _x         (Vint (Int.repr x));
+          temp _t         (Vint (Int.repr t0))
+        )
+        SEP ()
+      )
+      break: (
+        EX m' : Z,
+        PROP (
+          m' = inner_loop t0 m x 10 H2 /\
+          0 < x /\ x <= 990 /\
+          0 <= t0 /\ t0 <= 989010 /\
+          100000 <= m' /\ m' <= 989010
+        )
+        LOCAL (
+          temp _max_value (Vint (Int.repr m'));
+          temp _x         (Vint (Int.repr x));
+          temp _t         (Vint (Int.repr t0))
+        )
+        SEP ()
+      ).
+      * forward. Exists (inner_loop t0 m x 10 H2) t0 m. entailer!; try lia.
+      * Intros Ri n0 mcur. forward_if.
+        ++ abbreviate_semax. assert (10 ^ 5 <= n0 < 10 ^ 6) by lia. 
+           forward_call. destruct (is_palindrome_dec n0 10) as [Hp | Hnp].
+           -- forward_if (
+                PROP (
+                Ri = inner_loop t0 m x 10 H2 /\
+                Ri = n0 /\
+                0 <= n0 /\ n0 <= t0 /\
+                0 < x /\ x <= 990 /\
+                0 <= t0 /\ t0 <= 989010 /\
+                100000 <= n0 /\ n0 <= 989010
+              )
+              LOCAL (
+                temp _n         (Vint (Int.repr n0));
+                temp _max_value (Vint (Int.repr n0));
+                temp _x         (Vint (Int.repr x));
+                temp _t         (Vint (Int.repr t0))
+              )
+              SEP ()
+              ).
+              ** forward. entailer!. rewrite H9, inner_loop_found; auto.
+              ** discriminate.
+              ** Intros. forward. Exists Ri (n0 - x) n0. entailer!.
+                 symmetry. apply inner_loop_stop; try lia.
+           -- forward_if (
+                PROP (
+                  Ri = inner_loop t0 m x 10 H2 /\
+                  Ri = inner_loop n0 mcur x 10 H2 /\
+                  0 <= n0 /\ n0 <= t0 /\
+                  0 < x /\ x <= 990 /\
+                  0 <= t0 /\ t0 <= 989010 /\
+                  100000 <= mcur /\ mcur <= 989010
+                )
+                LOCAL (
+                  temp _n         (Vint (Int.repr n0));
+                  temp _max_value (Vint (Int.repr mcur));
+                  temp _x         (Vint (Int.repr x));
+                  temp _t         (Vint (Int.repr t0))
+                )
+                SEP ()
+              ).
+              ** forward. entailer!.
+              ** forward. entailer!.
+              ** Intros. forward. Exists Ri (n0 - x) mcur. entailer!.
+                 rewrite H9, inner_loop_miss; try lia; auto.
+        ++ forward. entailer!. Exists mcur. entailer!. rewrite H9.
+           rewrite inner_loop_stop; try lia.
+      * Intros m'. forward. forward. Exists R (x - 11) m' (t0 - 10989).
+        entailer!. split.
+        ++ rewrite H0. rewrite outer_loop_equation. destruct sumbool_and; try lia.
+           f_equal. f_equal. apply ProofIrrelevance.proof_irrelevance.
+        ++ f_equal. rewrite zero_ext_16; auto. lia.
+    - forward. rewrite outer_loop_equation in H0. destruct sumbool_and; try lia.
+      Exists R x m t0. entailer!.
+  + Intros R x m t0. deadvars!. forward.
 Qed.
