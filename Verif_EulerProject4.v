@@ -985,130 +985,115 @@ Lemma find_proof: semax_body Vprog Gprog f_find find_spec.
 Proof.
   start_function. forward. forward.
   forward_loop (
-    EX R x m t : Z,
+    EX x m : Z,
     PROP (
-      R = result 10 3 two_le_ten one_le_three /\
-      R = outer_loop x m t 10 3 two_le_ten one_le_three /\
-      t = (x * 999)%Z /\
-      0 < x /\ x <= 990 /\
-      0 <= t /\ t <= 989010 /\
-      100000 <= m /\ m <= 989010
+      result 10 3 two_le_ten one_le_three = outer_loop x m (x * 999) 10 3 two_le_ten one_le_three /\
+      0 < x <= 990 /\
+      100000 <= m <= 989010
     )
     LOCAL (
       temp _max_value (Vint (Int.repr m));
-      temp _t         (Vint (Int.repr t));
+      temp _t         (Vint (Int.repr (x * 999)));
       temp _x         (Vint (Int.repr x))
     )
     SEP ()
   )
   break: (
-    EX R x m t : Z,
+    EX x m : Z,
     PROP (
-      R = result 10 3 two_le_ten one_le_three /\
-      R = m /\
-      t = (x * 999)%Z /\
-      0 <= x /\ x <= 990 /\
-      0 <= t /\ t <= 989010 /\
+      m = result 10 3 two_le_ten one_le_three /\
+      0 < x /\ x <= 990 /\
       100000 <= m /\ m <= 989010
     )
     LOCAL (
       temp _max_value (Vint (Int.repr m));
-      
-      temp _t         (Vint (Int.repr t));
+      temp _t         (Vint (Int.repr (x * 999)));
       temp _x         (Vint (Int.repr x))
     )
     SEP ()
   ).
-  + forward. Exists (result 10 3 two_le_ten one_le_three) 990 100000 989010.
-    rewrite result_10_3_unfold. entailer!.
-  + Intros R x m t0. forward_if.
+  + forward. Exists 990 100000. rewrite result_10_3_unfold. entailer!.
+  + Intros x m. forward_if.
     - forward_loop (
-        EX Ri n mcur : Z,
+        EX n mcur : Z,
         PROP (
-          Ri = inner_loop t0 m x 10 H2 /\
-          Ri = inner_loop n mcur x 10 H2 /\
-          0 <= n /\ n <= t0 /\
+          inner_loop (x * 999) m x 10 (proj1 H0) = inner_loop n mcur x 10 (proj1 H0) /\
+          0 <= n /\ n <= x * 999 /\
           0 < x /\ x <= 990 /\
-          0 <= t0 /\ t0 <= 989010 /\
           100000 <= mcur /\ mcur <= 989010
         )
         LOCAL (
           temp _n         (Vint (Int.repr n));
           temp _max_value (Vint (Int.repr mcur));
           temp _x         (Vint (Int.repr x));
-          temp _t         (Vint (Int.repr t0))
+          temp _t         (Vint (Int.repr (x * 999)))
         )
         SEP ()
       )
       break: (
         EX m' : Z,
         PROP (
-          m' = inner_loop t0 m x 10 H2 /\
+          m' = inner_loop (x * 999) m x 10 (proj1 H0) /\
           0 < x /\ x <= 990 /\
-          0 <= t0 /\ t0 <= 989010 /\
           100000 <= m' /\ m' <= 989010
         )
         LOCAL (
           temp _max_value (Vint (Int.repr m'));
           temp _x         (Vint (Int.repr x));
-          temp _t         (Vint (Int.repr t0))
+          temp _t         (Vint (Int.repr (x * 999)))
         )
         SEP ()
       ).
-      * forward. Exists (inner_loop t0 m x 10 H2) t0 m. entailer!; try lia.
-      * Intros Ri n0 mcur. forward_if.
-        ++ abbreviate_semax. assert (10 ^ 5 <= n0 < 10 ^ 6) by lia. 
-           forward_call. destruct (is_palindrome_dec n0 10) as [Hp | Hnp].
+      * forward. Exists (x * 999) m. entailer!; try lia.
+      * Intros n0 mcur. forward_if.
+        ++ abbreviate_semax. forward_call. destruct (is_palindrome_dec n0 10).
            -- forward_if (
                 PROP (
-                Ri = inner_loop t0 m x 10 H2 /\
-                Ri = n0 /\
-                0 <= n0 /\ n0 <= t0 /\
-                0 < x /\ x <= 990 /\
-                0 <= t0 /\ t0 <= 989010 /\
-                100000 <= n0 /\ n0 <= 989010
+                n0 = inner_loop (x * 999) m x 10 (proj1 H0) /\
+                100000 <= n0 <= x * 999 /\
+                0 < x <= 990
               )
               LOCAL (
                 temp _n         (Vint (Int.repr n0));
                 temp _max_value (Vint (Int.repr n0));
                 temp _x         (Vint (Int.repr x));
-                temp _t         (Vint (Int.repr t0))
+                temp _t         (Vint (Int.repr (x * 999)))
               )
               SEP ()
               ).
-              ** forward. entailer!. rewrite H9, inner_loop_found; auto.
+              ** forward. entailer!. rewrite H3, inner_loop_found; auto.
               ** discriminate.
-              ** Intros. forward. Exists Ri (n0 - x) n0. entailer!.
+              ** Intros. forward. Exists (n0 - x) n0. entailer!.
                  symmetry. apply inner_loop_stop; try lia.
            -- forward_if (
                 PROP (
-                  Ri = inner_loop t0 m x 10 H2 /\
-                  Ri = inner_loop n0 mcur x 10 H2 /\
-                  0 <= n0 /\ n0 <= t0 /\
-                  0 < x /\ x <= 990 /\
-                  0 <= t0 /\ t0 <= 989010 /\
-                  100000 <= mcur /\ mcur <= 989010
+                  inner_loop (x * 999) m x 10 (proj1 H0) = inner_loop n0 mcur x 10 (proj1 H0) /\
+                  0 <= n0 <= x * 999 /\
+                  0 < x <= 990 /\
+                  100000 <= mcur <= 989010
                 )
                 LOCAL (
                   temp _n         (Vint (Int.repr n0));
                   temp _max_value (Vint (Int.repr mcur));
                   temp _x         (Vint (Int.repr x));
-                  temp _t         (Vint (Int.repr t0))
+                  temp _t         (Vint (Int.repr (x * 999)))
                 )
                 SEP ()
               ).
               ** forward. entailer!.
               ** forward. entailer!.
-              ** Intros. forward. Exists Ri (n0 - x) mcur. entailer!.
-                 rewrite H9, inner_loop_miss; try lia; auto.
-        ++ forward. entailer!. Exists mcur. entailer!. rewrite H9.
+              ** Intros. forward. Exists (n0 - x) mcur. entailer!.
+                 rewrite H3, inner_loop_miss; try lia; auto.
+        ++ forward. entailer!. Exists mcur. entailer!. rewrite H3.
            rewrite inner_loop_stop; try lia.
-      * Intros m'. forward. forward. Exists R (x - 11) m' (t0 - 10989).
+      * Intros m'. forward. forward. Exists (x - 11) m'.
         entailer!. split.
-        ++ rewrite H0. rewrite outer_loop_equation. destruct sumbool_and; try lia.
-           f_equal. f_equal. apply ProofIrrelevance.proof_irrelevance.
-        ++ f_equal. rewrite zero_ext_16; auto. lia.
-    - forward. rewrite outer_loop_equation in H0. destruct sumbool_and; try lia.
-      Exists R x m t0. entailer!.
-  + Intros R x m t0. deadvars!. forward.
+        ++ rewrite H. rewrite outer_loop_equation. destruct sumbool_and; try lia.
+           f_equal; try lia. f_equal. apply ProofIrrelevance.proof_irrelevance.
+        ++ split.
+           -- do 2 f_equal. lia.
+           -- f_equal. rewrite zero_ext_16; auto. lia.
+    - forward. rewrite outer_loop_equation in H. destruct sumbool_and; try lia.
+      Exists x m. entailer!.
+  + Intros x m. deadvars!. forward.
 Qed.
