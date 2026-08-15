@@ -3,12 +3,6 @@ Require Import EulerProject1.
 Instance CompSpecs: compspecs. make_compspecs prog. Defined.
 Definition Vprog: varspecs. mk_varspecs prog. Defined.
 
-Definition nat_divide_dec a b: { Nat.divide a b } + { ~ Nat.divide a b }.
-Proof.
-  destruct (Zdivide_dec (Z.of_nat a) (Z.of_nat b)).
-  + left. destruct d. exists (Z.to_nat x). lia.
-  + right. intro. apply n. destruct H. rewrite H. exists (Z.of_nat x). lia.
-Defined.
 
 Definition criterion (n: Z): bool :=
   if (Zdivide_dec 3 n)
@@ -31,7 +25,6 @@ Definition result (n: Z): Z := sum_Z (filter criterion (seq_Z n)).
 Definition aux n: Z := n * (n + 1) / 2.
 Definition faster_result n := 3 * aux (n / 3) + 5 * aux (n / 5) - 15 * aux (n / 15).
 
-Eval compute in (faster_result 999).
 
 Theorem thm_0 n (H: 0 <= n) (H0: Zeven n): aux n = (n / 2) * (n + 1).
 Proof.
@@ -72,83 +65,67 @@ Qed.
 Theorem thm_3 a n (Ha: 0 < a) (Hn: 0 <= n):
   (n + 1) / a = if Zdivide_dec a (n + 1) then n / a + 1 else n / a.
 Proof.
-  pose proof Hn as Hn'. revert Hn. pattern n. apply Z_lt_induction.
-  + intros. assert (0 <= x <= a - 2 \/ a - 1 = x \/ a <= x) by lia.
-    destruct H0; [|destruct H0].
-    - assert (1 <= x + 1 < a) by lia. rewrite Z.div_small; try lia.
-      destruct Zdivide_dec.
-      * destruct d. assert (x0 = 0 \/ 1 <= x0) by lia. destruct H3.
-        ++ lia.
-        ++ nia.
-      * rewrite Z.div_small; lia.
-    - subst. replace (a - 1 + 1) with a by ring.
-      rewrite Z.div_same; try lia. destruct Zdivide_dec.
-      * rewrite Z.div_small; lia.
-      * exfalso. apply n0. exists 1. lia.
-    - assert (0 <= x - a < x) by lia. pose proof (H _ H1 (proj1 H1)).
-      destruct (Zdivide_dec a (x - a + 1)).
-      * destruct d. destruct Zdivide_dec.
-        ++ assert (x + 1 = (x0 + 1) * a) by lia. rewrite H4.
-           assert (x = x0 * a + (a - 1)) by lia. rewrite H5.
-           rewrite Z_div_mult; try lia.
-           rewrite Z.div_add_l; try lia.
-           rewrite Z.div_small; lia.
-        ++ exfalso. apply n0. exists (x0 + 1). lia.
-      * destruct Zdivide_dec.
-        ++ destruct d. exfalso. apply n0. exists (x0 - 1). lia.
-        ++ replace (x + 1) with (1 * a + (x - a + 1)) by ring.
-           rewrite Z.div_add_l; try lia.
-           replace x with (1 * a + (x - a)) at 2 by ring.
-           rewrite Z.div_add_l; lia.
-  + auto.
+  destruct (Zdivide_dec a (n + 1)) as [Hd | Hd].
+  + destruct Hd as [k Hk]. assert (n / a = k - 1). 
+    { replace n with ((k - 1) * a + (a - 1)) by lia.
+      rewrite Z.div_add_l; try lia. rewrite Z.div_small; try lia. }
+    rewrite Hk, Z_div_mult; try lia.
+  + assert ((n + 1) mod a <> 0).
+    { intro. apply Hd. apply Zmod_divide; try lia. }
+    apply Z.div_unique with (r := (n + 1) mod a - 1); try lia.
+    - left. pose proof (Z.mod_pos_bound (n + 1) a Ha). lia.
+    - pose proof (Z_div_mod_eq (n + 1) a). lia.
 Qed.
 
-Theorem thm_4 a n (Ha: 0 < a) (Hn: 0 <= n) (H: (a | Z.succ n)): a * aux (Z.succ n / a) = a * aux (n / a) + Z.succ n.
+Theorem thm_4 a n (Ha: 0 < a) (Hn: 0 <= n) (H: (a | n + 1)):
+  a * aux ((n + 1) / a) = a * aux (n / a) + (n + 1).
 Proof.
-  ring_simplify. rewrite thm_3; auto. destruct Zdivide_dec.
-  + rewrite thm_2. ring_simplify.
-    destruct d. assert (n = (x - 1) * a + (a - 1)) by lia.
-    assert (n / a = x - 1).
-    { rewrite H1. rewrite Z.div_add_l; try lia. rewrite Z.div_small; lia. }
-    rewrite H2. rewrite H1. lia. apply Z_div_pos; lia.
-  + replace (Z.succ n) with (n + 1) in H by lia. tauto.
+  ring_simplify. rewrite thm_3; auto. destruct Zdivide_dec; try tauto.
+  rewrite thm_2. ring_simplify. destruct d.
+  assert (n = (x - 1) * a + (a - 1)) by lia. assert (n / a = x - 1).
+  { rewrite H1, Z.div_add_l, Z.div_small; lia. }
+  rewrite H2, H1. lia. apply Z_div_pos; lia.
 Qed.
 
-Theorem thm_5 a n (Ha: 0 < a) (Hn: 0 <= n) (H: ~ (a | Z.succ n)): a * aux (Z.succ n / a) = a * aux (n / a).
+Theorem thm_5 a n (Ha: 0 < a) (Hn: 0 <= n) (H: ~ (a | Z.succ n)):
+  a * aux ((n + 1) / a) = a * aux (n / a).
 Proof.
-  ring_simplify. rewrite thm_3; auto. destruct Zdivide_dec.
-  + replace (Z.succ n) with (n + 1) in H by ring. tauto.
-  + auto.
+  ring_simplify. rewrite thm_3; auto. destruct Zdivide_dec; auto. tauto.
+Qed.
+
+Lemma step_result (n : Z) (H : 0 <= n) :
+  result (Z.succ n) = result n + (if criterion (Z.succ n) then Z.succ n else 0).
+Proof.
+  unfold result. replace (seq_Z (Z.succ n)) with (seq_Z n ++ Z.succ n :: nil).
+  + rewrite filter_app. simpl. rewrite sum_Z_app. f_equal.
+    destruct criterion; auto. simpl. ring.
+  + unfold seq_Z. rewrite Z2Nat.inj_succ; auto. rewrite seq_S. simpl.
+    rewrite map_app. f_equal. rewrite map_cons. simpl (map _ []).
+    f_equal. lia.
 Qed.
 
 Theorem both_results_equal (n: Z) (H: 0 <= n): result n = faster_result n.
 Proof.
   revert n H. apply natlike_ind.
   + compute. auto.
-  + intros. unfold result, faster_result in *.
-    replace (seq_Z (Z.succ x)) with (seq_Z x ++ Z.succ x :: nil).
-    rewrite filter_app, sum_Z_app. rewrite H0. clear H0.
-    unfold criterion. simpl (filter _ _).
-    destruct (Zdivide_dec 3 (Z.succ x)); simpl (sum_Z _).
-    - rewrite thm_4; try lia; auto.
-      destruct (Zdivide_dec 5 (Z.succ x)).
-      * assert (15 | Z.succ x).
-        { assert (Z.lcm 3 5 = 15) by reflexivity. rewrite <- H0. apply Z.lcm_least; auto. }
-        rewrite thm_4; try lia; auto.
-        rewrite thm_4; try lia; auto.
-      * assert (~ (15 | Z.succ x)).
-        { intro. apply n. clear n. destruct H0. exists (3 * x0). lia. }
-        rewrite thm_5; try lia; auto.
-        rewrite thm_5; try lia; auto.
-     - rewrite thm_5; try lia; auto.
-       assert (~ (15 | Z.succ x)).
-       { intro. apply n. clear n. destruct H0. exists (5 * x0). lia. }
-       rewrite (thm_5 15); try lia; auto.
-       destruct Zdivide_dec; simpl (sum_Z _).
-       * rewrite thm_4; try lia; auto.
-       * rewrite thm_5; try lia; auto.
-    - unfold seq_Z. rewrite Z2Nat.inj_succ; auto. rewrite seq_S.
-      simpl. rewrite map_app. f_equal. simpl. f_equal. lia.
+  + intros. rewrite step_result; auto. unfold faster_result in *.
+    unfold criterion. repeat rewrite <- Z.add_1_r.
+    destruct (Zdivide_dec 3 (x + 1)), (Zdivide_dec 5 (x + 1)).
+    - assert (15 | x + 1).
+      { assert (Z.lcm 3 5 = 15) by auto. rewrite <- H1.
+        apply Z.lcm_least; auto. }
+      repeat rewrite thm_4; try lia; auto.
+    - assert (~ (15 | x + 1)).
+      { intro. apply n. destruct H1. exists (3 * x0). lia. }
+      rewrite (thm_5 5 x); try lia; auto. rewrite (thm_5 15 x); try lia; auto.
+      rewrite thm_4; try lia; auto.
+    - assert (~ (15 | x + 1)).
+      { intro. apply n. destruct H1. exists (5 * x0). lia. }
+      rewrite (thm_5 3 x); try lia; auto. rewrite (thm_5 15 x); try lia; auto.
+      rewrite thm_4; try lia; auto.
+    - assert (~ (15 | x + 1)).
+      { intro. apply n. destruct H1. exists (5 * x0). lia. }
+      repeat rewrite thm_5; try lia; auto.
 Qed.
 
 Definition aux_spec: ident * funspec :=
@@ -221,8 +198,8 @@ Proof.
          -- assert (number / 15 <= 66).
             { change 66 with (1000 / 15). apply Z.div_le_mono; lia. }
             lia.
-      ++ deadvars!. time forward.
-         -- entailer!. rewrite both_results_equal; try lia. auto.
+      ++ deadvars!. forward.
+         entailer!. rewrite both_results_equal; try lia. auto.
 Qed.
 
 Lemma body_main: semax_body Vprog Gprog f_main main_spec.
