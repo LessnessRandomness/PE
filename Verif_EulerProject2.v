@@ -386,32 +386,47 @@ Proof.
 Qed.
 
 
-Theorem last_value_le_even_fib (M : Z) (H : 0 < M) :
+Theorem last_value_le_even_fib_helper (k i : nat) :
+  (i < (k + 1) / 3 <-> S (3 * i) < k)%nat.
+Proof.
+  intros. replace k with (k + 1 - 1)%nat at 2 by lia.
+  rewrite (Nat.div_mod_eq (k + 1) 3) at 2.
+  pose proof (Nat.mod_bound_pos (k + 1) 3 ltac:(lia) ltac:(lia)). nia.
+Qed.
+
+Lemma last_value_le_zero (f : sequence Z) (H : increasing f) (M : Z)
+    (Hf : M < f 0%nat) : last_value_le H M = 0%nat.
+Proof.
+  unfold last_value_le. rewrite last_value_le_aux_equation.
+  destruct Z_lt_le_dec; lia.
+Qed.
+
+Theorem last_value_le_even_fib (M : Z) :
   last_value_le even_fibonacci_efficient_increasing M
   = ((last_value_le fibonacci_increasing M + 1) / 3)%nat.
 Proof.
-  assert (forall (i k: nat), (i < (k + 1) / 3 <-> S (3 * i) < k)%nat).
-  { intros. replace k with (k + 1 - 1)%nat at 2 by lia.
-    rewrite (Nat.div_mod_eq (k + 1) 3) at 2.
-    pose proof (Nat.mod_bound_pos (k + 1) 3 ltac:(lia) ltac:(lia)).
-    nia. }
-  remember (last_value_le fibonacci_increasing M) as k.
-  assert (forall (i : nat),
-    (i < (k + 1) / 3)%nat <-> even_fibonacci_efficient i <= M).
-  { intros. rewrite H0. rewrite even_fibonacci_efficient_thm.
-    rewrite <- (last_value_le_thm fibonacci_increasing M). rewrite Heqk.
-    reflexivity. }
-  assert (forall (i : nat),
-      (i < last_value_le even_fibonacci_efficient_increasing M)%nat <->
-      (i < (k + 1) / 3)%nat).
-  { intro i. rewrite last_value_le_thm. symmetry. auto. }
-  assert (last_value_le even_fibonacci_efficient_increasing M <= (k + 1) / 3)%nat.
-  { destruct (le_dec (last_value_le even_fibonacci_efficient_increasing M) ((k + 1) / 3))%nat; auto.
-    rewrite Nat.nle_gt in n. rewrite H2 in n. lia. }
-  assert ((k + 1) / 3 <= last_value_le even_fibonacci_efficient_increasing M)%nat.
-  { destruct (le_dec ((k + 1) / 3) (last_value_le even_fibonacci_efficient_increasing M))%nat; auto.
-    rewrite Nat.nle_gt in n. rewrite <- H2 in n. lia. }
-  lia.
+  destruct (Z_le_dec M 0).
+  + rewrite last_value_le_zero. rewrite last_value_le_zero. auto.
+    { replace (fibonacci 0) with 1 by (compute; auto). lia. }
+    { replace (even_fibonacci_efficient 0) with 2 by (compute; auto). lia. }
+  + remember (last_value_le fibonacci_increasing M) as k.
+    assert (forall (i : nat),
+      (i < (k + 1) / 3)%nat <-> even_fibonacci_efficient i <= M).
+    { intros. rewrite last_value_le_even_fib_helper.
+      rewrite even_fibonacci_efficient_thm.
+      rewrite <- (last_value_le_thm fibonacci_increasing M). rewrite Heqk.
+      reflexivity. }
+    assert (forall (i : nat),
+        (i < last_value_le even_fibonacci_efficient_increasing M)%nat <->
+        (i < (k + 1) / 3)%nat).
+    { intro i. rewrite last_value_le_thm. symmetry. auto. }
+    assert (last_value_le even_fibonacci_efficient_increasing M <= (k + 1) / 3)%nat.
+    { destruct (le_dec (last_value_le even_fibonacci_efficient_increasing M) ((k + 1) / 3))%nat; auto.
+      exfalso. rewrite Nat.nle_gt in n0. rewrite H0 in n0. lia. }
+    assert ((k + 1) / 3 <= last_value_le even_fibonacci_efficient_increasing M)%nat.
+    { destruct (le_dec ((k + 1) / 3) (last_value_le even_fibonacci_efficient_increasing M))%nat; auto.
+      rewrite Nat.nle_gt in n0. rewrite <- H0 in n0. lia. }
+    lia.
 Qed.
 
 Theorem both_results_equal (M: Z) : result_simple M = result_more_efficient M.
@@ -551,6 +566,7 @@ Definition main_spec :=
      SEP(TT).
 
 Definition Gprog := [result_spec; main_spec].
+
 
 Lemma body_result: semax_body Vprog Gprog f_result result_spec.
 Proof.
