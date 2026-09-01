@@ -803,7 +803,26 @@ Definition max_prime_power_spec :=
       RETURN (Vint (Int.repr (Z.pow p (get_exp_le_bound bound p))))
       SEP ().
 
-Definition Gprog := [max_prime_power_spec].
+Definition bool_list_of_function (n : Z) (f : Z -> bool) : list val :=
+  map (fun i => Val.of_bool (f (Z.of_nat i))) (seq 0 (Z.to_nat n)).
+
+Definition sieve_primes_spec :=
+  DECLARE _sieve_primes
+    WITH n : Z, arr : val, f_init : Z -> bool, sh : share
+    PRE [ tptr tbool, tint ]
+      PROP (2 <= n <= 100; writable_share sh)
+      PARAMS (arr; Vint (Int.repr n))
+      SEP (data_at sh (tarray tbool (n + 1)) (bool_list_of_function (n + 1) f_init) arr)
+    POST [ tvoid ]
+      PROP ()
+      LOCAL ()
+      SEP (data_at sh (tarray tbool (n + 1))
+            (bool_list_of_function (n + 1)
+              (fun i => if Z_le_dec i 1 then f_init i else sieve n i))
+            arr).
+
+Definition Gprog := [max_prime_power_spec; sieve_primes_spec].
+
 
 Lemma max_prime_power_proof : 
   semax_body Vprog Gprog f_max_prime_power max_prime_power_spec.
@@ -820,18 +839,16 @@ Proof.
   + entailer!.
   + forward. entailer!. Exists (k + 1). entailer!.
     rewrite Z.pow_add_r; try lia. ring_simplify (p ^ 1). split; auto. 
-    rewrite Int.unsigned_repr in HRE.
-    - nia.
-    - unfold Int.max_unsigned. simpl. nia.
+    rewrite Int.unsigned_repr in HRE; try nia.
+    unfold Int.max_unsigned. simpl. nia.
   + deadvars!. forward.
-    - entailer!. replace Int.zero with (Int.repr 0).
-      * assert (p = 0).
-        { replace Int.zero with (Int.repr 0) by auto.
-          apply repr_inj_unsigned in H3; auto.
-          + unfold Int.max_unsigned; simpl; lia.
-          + unfold Int.max_unsigned; simpl; lia. }
-        lia.
-      * auto.
+    - entailer!. replace Int.zero with (Int.repr 0) by auto.
+      assert (p = 0).
+      { replace Int.zero with (Int.repr 0) by auto.
+        apply repr_inj_unsigned in H3; auto.
+        + unfold Int.max_unsigned; simpl; lia.
+        + unfold Int.max_unsigned; simpl; lia. }
+      lia.
     - entailer!. split.
       * destruct (Z_le_dec p bound).
         ++ apply prime_pow_le_bound_le_n; try lia.
@@ -867,4 +884,49 @@ Proof.
         ++ unfold Int.max_unsigned; simpl; lia.
 Qed.
 
+Lemma sieve_primes_proof :
+  semax_body Vprog Gprog f_sieve_primes sieve_primes_spec.
+Proof.
+  start_function.
+   forward_loop
+    (EX i : Z,
+      PROP (2 <= i <= n + 1)
+      LOCAL (temp _i (Vint (Int.repr i));
+             temp _is_prime arr;
+             temp _n (Vint (Int.repr n)))
+      SEP (data_at sh (tarray tbool (n + 1))
+            (bool_list_of_function (n + 1)
+               (fun k => if Z_le_dec k 1 then f_init k
+                         else if Z_lt_dec k i then true
+                         else f_init k))
+            arr))
+  break:
+    (PROP ()
+     LOCAL (temp _is_prime arr; temp _n (Vint (Int.repr n)))
+     SEP (data_at sh (tarray tbool (n + 1))
+           (bool_list_of_function (n + 1)
+              (fun k => if Z_le_dec k 1 then f_init k else if Z_le_dec k n then true else f_init k))
+           arr)).
+  + forward. Exists 2. entailer!.
+    assert (bool_list_of_function (n + 1) f_init = 
+            bool_list_of_function (n + 1) (fun k => if Z_le_dec k 1 then f_init k else if Z_lt_dec k 2 then true else f_init k)).
+    { unfold bool_list_of_function. apply map_ext. intros a.
+      destruct Z_le_dec; auto. destruct Z_lt_dec; try lia; auto. }
+    rewrite H3. auto.
+  + Intros i. forward_if.
+    - abbreviate_semax. (* forward. *) admit.
+    - assert (n < i). { admit. }
+      assert (i = n + 1) by lia.
+      forward. entailer!. 
+      assert (bool_list_of_function (n + 1)
+                (fun k => if Z_le_dec k 1 then f_init k else if Z_lt_dec k (n + 1) then true else f_init k) =
+              bool_list_of_function (n + 1)
+                (fun k => if Z_le_dec k 1 then f_init k else if Z_le_dec k n then true else f_init k)).
+      { unfold bool_list_of_function. apply map_ext. intros a.
+        f_equal. destruct Z_lt_dec; try lia. auto. destruct Z_le_dec; auto.
+        + destruct Z_le_dec; try lia.
+        + repeat destruct Z_le_dec; auto. lia. }
+      rewrite H3. auto.
+  + admit.
+Admitted.
 
