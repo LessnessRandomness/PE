@@ -1,4 +1,4 @@
-From Stdlib Require Import String List ZArith.
+From Coq Require Import String List ZArith.
 From compcert Require Import Coqlib Integers Floats AST Ctypes Cop Clight Clightdefs.
 Import Clightdefs.ClightNotations.
 Local Open Scope Z_scope.
@@ -16,7 +16,7 @@ Module Info.
   Definition bitsize := 64.
   Definition big_endian := false.
   Definition source_file := "EulerProject3.c".
-  Definition normalized := false.
+  Definition normalized := true.
 End Info.
 
 Definition ___builtin_ais_annot : ident := $"__builtin_ais_annot".
@@ -87,6 +87,7 @@ Definition _t'2 : ident := 129%positive.
 Definition _t'3 : ident := 130%positive.
 Definition _t'4 : ident := 131%positive.
 Definition _t'5 : ident := 132%positive.
+Definition _t'6 : ident := 133%positive.
 
 Definition v_highest := {|
   gvar_info := tulong;
@@ -100,7 +101,7 @@ Definition f_factorize := {|
   fn_callconv := cc_default;
   fn_params := ((_n, tulong) :: (_f, tulong) :: nil);
   fn_vars := nil;
-  fn_temps := nil;
+  fn_temps := ((_t'1, tulong) :: nil);
   fn_body :=
 (Ssequence
   (Sifthenelse (Ebinop Olt (Etempvar _n tulong) (Etempvar _f tulong) tint)
@@ -114,10 +115,12 @@ Definition f_factorize := {|
       (Ssequence
         (Sset _n
           (Ebinop Odiv (Etempvar _n tulong) (Etempvar _f tulong) tulong))
-        (Sifthenelse (Ebinop Ogt (Etempvar _f tulong) (Evar _highest tulong)
-                       tint)
-          (Sassign (Evar _highest tulong) (Etempvar _f tulong))
-          Sskip)))
+        (Ssequence
+          (Sset _t'1 (Evar _highest tulong))
+          (Sifthenelse (Ebinop Ogt (Etempvar _f tulong)
+                         (Etempvar _t'1 tulong) tint)
+            (Sassign (Evar _highest tulong) (Etempvar _f tulong))
+            Sskip))))
     (Sreturn (Some (Etempvar _n tulong)))))
 |}.
 
@@ -127,7 +130,8 @@ Definition f_find := {|
   fn_params := ((_n, tulong) :: nil);
   fn_vars := nil;
   fn_temps := ((_i, tulong) :: (_t'5, tulong) :: (_t'4, tulong) ::
-               (_t'3, tulong) :: (_t'2, tulong) :: (_t'1, tulong) :: nil);
+               (_t'3, tulong) :: (_t'2, tulong) :: (_t'1, tulong) ::
+               (_t'6, tulong) :: nil);
   fn_body :=
 (Ssequence
   (Sassign (Evar _highest tulong) (Econst_int (Int.repr 1) tint))
@@ -180,7 +184,9 @@ Definition f_find := {|
         (Ssequence
           (Sifthenelse (Ebinop Oeq (Etempvar _n tulong)
                          (Econst_int (Int.repr 1) tint) tint)
-            (Sset _t'5 (Ecast (Evar _highest tulong) tulong))
+            (Ssequence
+              (Sset _t'6 (Evar _highest tulong))
+              (Sset _t'5 (Ecast (Etempvar _t'6 tulong) tulong)))
             (Sset _t'5 (Ecast (Etempvar _n tulong) tulong)))
           (Sreturn (Some (Etempvar _t'5 tulong))))))))
 |}.

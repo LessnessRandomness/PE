@@ -1,4 +1,4 @@
-From Stdlib Require Import String List ZArith.
+From Coq Require Import String List ZArith.
 From compcert Require Import Coqlib Integers Floats AST Ctypes Cop Clight Clightdefs.
 Import Clightdefs.ClightNotations.
 Local Open Scope Z_scope.
@@ -16,7 +16,7 @@ Module Info.
   Definition bitsize := 64.
   Definition big_endian := false.
   Definition source_file := "EulerProject2.c".
-  Definition normalized := false.
+  Definition normalized := true.
 End Info.
 
 Definition ___builtin_ais_annot : ident := $"__builtin_ais_annot".

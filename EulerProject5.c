@@ -25,14 +25,14 @@ static void sieve_primes(bool is_prime[], int n) {
     }
 }
 
-uint32_t result() {
+uint32_t result(int n) {
     bool is_prime[N + 1];
-    sieve_primes(is_prime, N);
+    sieve_primes(is_prime, n);
   
     uint32_t result = 1;
-    for (int i = 2; i <= N; i++) {
+    for (int i = 2; i <= n; i++) {
         if (is_prime[i]) {
-            result *= max_prime_power(i, N);
+            result *= max_prime_power(i, n);
         }
     }
     return result;
@@ -41,7 +41,7 @@ uint32_t result() {
 int main(void) {
 
     printf("The smallest positive number evenly divisible by all numbers from 1 to %d is: %lu\n", 
-           N, result());
+           N, result(20));
            
     return 0;
 }

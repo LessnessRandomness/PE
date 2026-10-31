@@ -75,34 +75,42 @@ Definition ___compcert_va_composite : ident := $"__compcert_va_composite".
 Definition ___compcert_va_float64 : ident := $"__compcert_va_float64".
 Definition ___compcert_va_int32 : ident := $"__compcert_va_int32".
 Definition ___compcert_va_int64 : ident := $"__compcert_va_int64".
-Definition _aux : ident := $"aux".
 Definition _main : ident := $"main".
-Definition _max : ident := $"max".
 Definition _n : ident := $"n".
-Definition _result : ident := $"result".
 Definition _solution : ident := $"solution".
+Definition _triangular : ident := $"triangular".
 Definition _t'1 : ident := 128%positive.
 Definition _t'2 : ident := 129%positive.
 Definition _t'3 : ident := 130%positive.
 
-Definition f_aux := {|
+Definition f_triangular := {|
   fn_return := tuint;
   fn_callconv := cc_default;
   fn_params := ((_n, tuint) :: nil);
   fn_vars := nil;
   fn_temps := nil;
   fn_body :=
-(Sreturn (Some (Ebinop Odiv
-                 (Ebinop Omul (Etempvar _n tuint)
+(Sifthenelse (Ebinop Oeq
+               (Ebinop Omod (Etempvar _n tuint)
+                 (Econst_int (Int.repr 2) tint) tuint)
+               (Econst_int (Int.repr 0) tint) tint)
+  (Sreturn (Some (Ebinop Omul
+                   (Ebinop Odiv (Etempvar _n tuint)
+                     (Econst_int (Int.repr 2) tint) tuint)
                    (Ebinop Oadd (Etempvar _n tuint)
-                     (Econst_int (Int.repr 1) tint) tuint) tuint)
-                 (Econst_int (Int.repr 2) tint) tuint)))
+                     (Econst_int (Int.repr 1) tint) tuint) tuint)))
+  (Sreturn (Some (Ebinop Omul
+                   (Ebinop Odiv
+                     (Ebinop Oadd (Etempvar _n tuint)
+                       (Econst_int (Int.repr 1) tint) tuint)
+                     (Econst_int (Int.repr 2) tint) tuint)
+                   (Etempvar _n tuint) tuint))))
 |}.
 
 Definition f_solution := {|
   fn_return := tuint;
   fn_callconv := cc_default;
-  fn_params := ((_max, tuint) :: nil);
+  fn_params := ((_n, tuint) :: nil);
   fn_vars := nil;
   fn_temps := ((_t'3, tuint) :: (_t'2, tuint) :: (_t'1, tuint) :: nil);
   fn_body :=
@@ -110,24 +118,24 @@ Definition f_solution := {|
   (Ssequence
     (Ssequence
       (Scall (Some _t'1)
-        (Evar _aux (Tfunction (tuint :: nil) tuint cc_default))
-        ((Ebinop Odiv (Etempvar _max tuint) (Econst_int (Int.repr 3) tint)
+        (Evar _triangular (Tfunction (tuint :: nil) tuint cc_default))
+        ((Ebinop Odiv (Etempvar _n tuint) (Econst_int (Int.repr 3) tint)
            tuint) :: nil))
       (Scall (Some _t'2)
-        (Evar _aux (Tfunction (tuint :: nil) tuint cc_default))
-        ((Ebinop Odiv (Etempvar _max tuint) (Econst_int (Int.repr 5) tint)
+        (Evar _triangular (Tfunction (tuint :: nil) tuint cc_default))
+        ((Ebinop Odiv (Etempvar _n tuint) (Econst_int (Int.repr 15) tint)
            tuint) :: nil)))
     (Scall (Some _t'3)
-      (Evar _aux (Tfunction (tuint :: nil) tuint cc_default))
-      ((Ebinop Odiv (Etempvar _max tuint) (Econst_int (Int.repr 15) tint)
-         tuint) :: nil)))
-  (Sreturn (Some (Ebinop Osub
-                   (Ebinop Oadd
+      (Evar _triangular (Tfunction (tuint :: nil) tuint cc_default))
+      ((Ebinop Odiv (Etempvar _n tuint) (Econst_int (Int.repr 5) tint) tuint) ::
+       nil)))
+  (Sreturn (Some (Ebinop Oadd
+                   (Ebinop Osub
                      (Ebinop Omul (Econst_int (Int.repr 3) tint)
                        (Etempvar _t'1 tuint) tuint)
-                     (Ebinop Omul (Econst_int (Int.repr 5) tint)
+                     (Ebinop Omul (Econst_int (Int.repr 15) tint)
                        (Etempvar _t'2 tuint) tuint) tuint)
-                   (Ebinop Omul (Econst_int (Int.repr 15) tint)
+                   (Ebinop Omul (Econst_int (Int.repr 5) tint)
                      (Etempvar _t'3 tuint) tuint) tuint))))
 |}.
 
@@ -136,16 +144,14 @@ Definition f_main := {|
   fn_callconv := cc_default;
   fn_params := nil;
   fn_vars := nil;
-  fn_temps := ((_result, tuint) :: (_t'1, tuint) :: nil);
+  fn_temps := ((_t'1, tuint) :: nil);
   fn_body :=
 (Ssequence
   (Ssequence
-    (Ssequence
-      (Scall (Some _t'1)
-        (Evar _solution (Tfunction (tuint :: nil) tuint cc_default))
-        ((Econst_int (Int.repr 999) tint) :: nil))
-      (Sset _result (Etempvar _t'1 tuint)))
-    (Sreturn (Some (Etempvar _result tuint))))
+    (Scall (Some _t'1)
+      (Evar _solution (Tfunction (tuint :: nil) tuint cc_default))
+      ((Econst_int (Int.repr 999) tint) :: nil))
+    (Sreturn (Some (Etempvar _t'1 tuint))))
   (Sreturn (Some (Econst_int (Int.repr 0) tint))))
 |}.
 
@@ -409,11 +415,12 @@ Definition global_definitions : list (ident * globdef fundef type) :=
                      {|cc_vararg:=(Some 1); cc_unproto:=false; cc_structret:=false|}))
      (tint :: nil) tvoid
      {|cc_vararg:=(Some 1); cc_unproto:=false; cc_structret:=false|})) ::
- (_aux, Gfun(Internal f_aux)) :: (_solution, Gfun(Internal f_solution)) ::
- (_main, Gfun(Internal f_main)) :: nil).
+ (_triangular, Gfun(Internal f_triangular)) ::
+ (_solution, Gfun(Internal f_solution)) :: (_main, Gfun(Internal f_main)) ::
+ nil).
 
 Definition public_idents : list ident :=
-(_main :: _solution :: _aux :: ___builtin_debug ::
+(_main :: _solution :: _triangular :: ___builtin_debug ::
  ___builtin_write32_reversed :: ___builtin_write16_reversed ::
  ___builtin_read32_reversed :: ___builtin_read16_reversed ::
  ___builtin_fnmsub :: ___builtin_fnmadd :: ___builtin_fmsub ::

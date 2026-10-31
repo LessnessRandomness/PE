@@ -1,4 +1,4 @@
-From Stdlib Require Import String List ZArith.
+From Coq Require Import String List ZArith.
 From compcert Require Import Coqlib Integers Floats AST Ctypes Cop Clight Clightdefs.
 Import Clightdefs.ClightNotations.
 Local Open Scope Z_scope.
@@ -222,7 +222,7 @@ Definition f_sieve_primes := {|
 Definition f_result := {|
   fn_return := tuint;
   fn_callconv := cc_default;
-  fn_params := nil;
+  fn_params := ((_n, tint) :: nil);
   fn_vars := ((_is_prime, (tarray tbool 21)) :: nil);
   fn_temps := ((_result__1, tuint) :: (_i, tint) :: (_t'1, tuint) ::
                (_t'2, tbool) :: nil);
@@ -231,8 +231,7 @@ Definition f_result := {|
   (Scall None
     (Evar _sieve_primes (Tfunction ((tptr tbool) :: tint :: nil) tvoid
                           cc_default))
-    ((Evar _is_prime (tarray tbool 21)) :: (Econst_int (Int.repr 20) tint) ::
-     nil))
+    ((Evar _is_prime (tarray tbool 21)) :: (Etempvar _n tint) :: nil))
   (Ssequence
     (Sset _result__1 (Econst_int (Int.repr 1) tint))
     (Ssequence
@@ -240,8 +239,8 @@ Definition f_result := {|
         (Sset _i (Econst_int (Int.repr 2) tint))
         (Sloop
           (Ssequence
-            (Sifthenelse (Ebinop Ole (Etempvar _i tint)
-                           (Econst_int (Int.repr 20) tint) tint)
+            (Sifthenelse (Ebinop Ole (Etempvar _i tint) (Etempvar _n tint)
+                           tint)
               Sskip
               Sbreak)
             (Ssequence
@@ -254,8 +253,7 @@ Definition f_result := {|
                   (Scall (Some _t'1)
                     (Evar _max_prime_power (Tfunction (tint :: tint :: nil)
                                              tuint cc_default))
-                    ((Etempvar _i tint) :: (Econst_int (Int.repr 20) tint) ::
-                     nil))
+                    ((Etempvar _i tint) :: (Etempvar _n tint) :: nil))
                   (Sset _result__1
                     (Ebinop Omul (Etempvar _result__1 tuint)
                       (Etempvar _t'1 tuint) tuint)))
@@ -276,7 +274,9 @@ Definition f_main := {|
 (Ssequence
   (Ssequence
     (Ssequence
-      (Scall (Some _t'1) (Evar _result (Tfunction nil tuint cc_default)) nil)
+      (Scall (Some _t'1)
+        (Evar _result (Tfunction (tint :: nil) tuint cc_default))
+        ((Econst_int (Int.repr 20) tint) :: nil))
       (Scall None
         (Evar _printf (Tfunction ((tptr tschar) :: nil) tint
                         {|cc_vararg:=(Some 1); cc_unproto:=false; cc_structret:=false|}))
