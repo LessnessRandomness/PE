@@ -229,35 +229,36 @@ Qed.
 Instance CompSpecs: compspecs. make_compspecs prog. Defined.
 Definition Vprog: varspecs. mk_varspecs prog. Defined.
 
-
 Definition triangular_spec: ident * funspec :=
   DECLARE _triangular
   WITH number: Z
-  PRE [ tuint ]
-    PROP (0 <= number <= 92681)
-    PARAMS (Vint (Int.repr number))
+  PRE [ tulong ]
+    PROP (0 <= number <= 6074000999)
+    PARAMS (Vlong (Int64.repr number))
     SEP ()
-  POST [ tuint ]
-    PROP (0 <= triangular number <= Int.max_unsigned)
-    RETURN (Vint (Int.repr (triangular number)))
+  POST [ tulong ]
+    PROP (0 <= triangular number <= Int64.max_unsigned)
+    RETURN (Vlong (Int64.repr (triangular number)))
     SEP ().
 
 Definition solution_spec: ident * funspec :=
   DECLARE _solution
   WITH number: Z
-  PRE [ tuint ]
-    PROP (0 <= number <= 135671)
-    PARAMS (Vint (Int.repr number))
+  PRE [ tulong ]
+    PROP (0 <= number <= 8891427026)
+    PARAMS (Vlong (Int64.repr number))
     SEP ()
-  POST [ tuint ]
-    PROP (0 <= sum_multiples_of_3_or_5 number <= Int.max_unsigned)
-    RETURN (Vint (Int.repr (sum_multiples_of_3_or_5 number)))
+  POST [ tulong ]
+    PROP (0 <= sum_multiples_of_3_or_5 number <= Int64.max_unsigned)
+    RETURN (Vlong (Int64.repr (sum_multiples_of_3_or_5 number)))
     SEP ().
 
 Definition Gprog := [triangular_spec; solution_spec].
 
 Theorem triangular_correct: semax_body Vprog Gprog f_triangular triangular_spec.
 Proof.
+  assert (Int64.max_unsigned = 18446744073709551615) as Hmax by reflexivity.
+  assert (Int64.max_unsigned = 36893488147419103230 / 2) as H by reflexivity.
   start_function.
   forward_if.
   + forward.
@@ -266,29 +267,33 @@ Proof.
     - unfold triangular.
       apply Z.div_pos; nia.
     - unfold triangular.
-      change Int.max_unsigned with (8589934590 / 2).
+      rewrite H.
       apply Z.div_le_mono; nia.
-    - apply repr_inj_unsigned in H0.
-      * unfold triangular.
-        do 2 f_equal.
-        apply Z.mod_divide in H0; try lia.
-        destruct H0; subst.
+    - unfold Int64.modu in H1.
+      rewrite Int64.unsigned_repr in H1; try lia.
+      rewrite Int64.unsigned_repr in H1; try lia.
+      apply repr_inj_unsigned64 in H1; try lia.
+      * do 2 f_equal.
+        unfold triangular.
+        apply Z.mod_divide in H1; try lia.
+        destruct H1; subst.
         rewrite Z.div_mul; try lia.
         replace (x * 2 * (x * 2 + 1)) with (x * (x * 2 + 1) * 2) by ring.
         rewrite Z.div_mul; lia.
       * pose proof (Z.mod_pos_bound number 2 ltac:(lia)).
-        change Int.max_unsigned with 4294967295.
         lia.
-      * change Int.max_unsigned with 4294967295; lia.
   + forward.
     entailer!.
     split; [| split].
     - unfold triangular.
       apply Z.div_pos; nia.
     - unfold triangular.
-      change Int.max_unsigned with (8589934590 / 2).
+      rewrite H.
       apply Z.div_le_mono; nia.
-    - assert (number mod 2 <> 0) by congruence.
+    - unfold Int64.modu in H1.
+      rewrite Int64.unsigned_repr in H1; try lia.
+      rewrite Int64.unsigned_repr in H1; try lia.
+      apply repr64_neq_e in H1.
       pose proof (Z_div_mod_eq_full number 2).
       pose proof (Z.mod_pos_bound number 2 ltac:(lia)).
       assert (number mod 2 = 1) by lia.
@@ -304,36 +309,36 @@ Qed.
 
 Lemma solution_correct: semax_body Vprog Gprog f_solution solution_spec.
 Proof.
+  assert (Int64.max_unsigned = 18446744073709551615) as Hmax by reflexivity.
   start_function.
-  assert (0 <= number / 3 <= 92681) as H1.
-  { change 92681 with (278043 / 3).
-    split; [apply Z.div_pos | apply Z.div_le_mono]; lia. }
-  assert (0 <= number / 5 <= 92681) as H2.
-  { change 92681 with (463405 / 5).
-    split; [apply Z.div_pos | apply Z.div_le_mono]; lia. }
-  assert (0 <= number / 15 <= 92681) as H3.
-  { change 92681 with (1390215 / 15).
-    split; [apply Z.div_pos | apply Z.div_le_mono]; lia. }
+  assert (0 <= number / 3 <= 18222002997 / 3) as H1.
+  { split; [apply Z.div_pos | apply Z.div_le_mono]; lia. }
+  assert (0 <= number / 5 <= 30370004995 / 5) as H2.
+  { split; [apply Z.div_pos | apply Z.div_le_mono]; lia. }
+  assert (0 <= number / 15 <= 91110014985 / 15) as H3.
+  { split; [apply Z.div_pos | apply Z.div_le_mono]; lia. }
   forward_call (number / 3).
   forward_call (number / 15).
   Intros w.
   forward_call (number / 5).
   forward.
+  clear H7.
   entailer!.
   split; [| split].
   + apply sum_multiples_of_3_or_5_nonneg; lia. 
-  + pose proof (sum_multiples_of_3_or_5_increasing 135671 number H).
-    rewrite (sum_multiples_eq_closed_form 135671) in H4; try lia.
-    change (closed_form 135671) with 4294927803 in H4.
-    change Int.max_unsigned with 4294967295.
+  + pose proof (sum_multiples_of_3_or_5_increasing 8891427026 number H).
+    rewrite (sum_multiples_eq_closed_form 8891427026) in H4; try lia.
+    change (closed_form 8891427026) with 18446744066952937668 in H4.
     lia.
   + Opaque Z.div. simpl. Transparent Z.div.
-    rewrite (mul_repr 15).
-    rewrite sub_repr.
-    rewrite add_repr.
+    rewrite (mul64_repr 15).
+    rewrite sub64_repr.
+    rewrite add64_repr.
     rewrite sum_multiples_eq_closed_form; try lia.
     unfold closed_form.
     do 2 f_equal.
     lia.
 Qed.
+
+
 

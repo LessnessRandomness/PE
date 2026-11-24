@@ -16,7 +16,7 @@ Module Info.
   Definition bitsize := 64.
   Definition big_endian := false.
   Definition source_file := "EulerProject1.c".
-  Definition normalized := false.
+  Definition normalized := true.
 End Info.
 
 Definition ___builtin_ais_annot : ident := $"__builtin_ais_annot".
@@ -84,59 +84,59 @@ Definition _t'2 : ident := 129%positive.
 Definition _t'3 : ident := 130%positive.
 
 Definition f_triangular := {|
-  fn_return := tuint;
+  fn_return := tulong;
   fn_callconv := cc_default;
-  fn_params := ((_n, tuint) :: nil);
+  fn_params := ((_n, tulong) :: nil);
   fn_vars := nil;
   fn_temps := nil;
   fn_body :=
 (Sifthenelse (Ebinop Oeq
-               (Ebinop Omod (Etempvar _n tuint)
-                 (Econst_int (Int.repr 2) tint) tuint)
+               (Ebinop Omod (Etempvar _n tulong)
+                 (Econst_long (Int64.repr 2) tulong) tulong)
                (Econst_int (Int.repr 0) tint) tint)
   (Sreturn (Some (Ebinop Omul
-                   (Ebinop Odiv (Etempvar _n tuint)
-                     (Econst_int (Int.repr 2) tint) tuint)
-                   (Ebinop Oadd (Etempvar _n tuint)
-                     (Econst_int (Int.repr 1) tint) tuint) tuint)))
+                   (Ebinop Odiv (Etempvar _n tulong)
+                     (Econst_long (Int64.repr 2) tulong) tulong)
+                   (Ebinop Oadd (Etempvar _n tulong)
+                     (Econst_long (Int64.repr 1) tulong) tulong) tulong)))
   (Sreturn (Some (Ebinop Omul
                    (Ebinop Odiv
-                     (Ebinop Oadd (Etempvar _n tuint)
-                       (Econst_int (Int.repr 1) tint) tuint)
-                     (Econst_int (Int.repr 2) tint) tuint)
-                   (Etempvar _n tuint) tuint))))
+                     (Ebinop Oadd (Etempvar _n tulong)
+                       (Econst_long (Int64.repr 1) tulong) tulong)
+                     (Econst_long (Int64.repr 2) tulong) tulong)
+                   (Etempvar _n tulong) tulong))))
 |}.
 
 Definition f_solution := {|
-  fn_return := tuint;
+  fn_return := tulong;
   fn_callconv := cc_default;
-  fn_params := ((_n, tuint) :: nil);
+  fn_params := ((_n, tulong) :: nil);
   fn_vars := nil;
-  fn_temps := ((_t'3, tuint) :: (_t'2, tuint) :: (_t'1, tuint) :: nil);
+  fn_temps := ((_t'3, tulong) :: (_t'2, tulong) :: (_t'1, tulong) :: nil);
   fn_body :=
 (Ssequence
   (Ssequence
     (Ssequence
       (Scall (Some _t'1)
-        (Evar _triangular (Tfunction (tuint :: nil) tuint cc_default))
-        ((Ebinop Odiv (Etempvar _n tuint) (Econst_int (Int.repr 3) tint)
-           tuint) :: nil))
+        (Evar _triangular (Tfunction (tulong :: nil) tulong cc_default))
+        ((Ebinop Odiv (Etempvar _n tulong)
+           (Econst_long (Int64.repr 3) tulong) tulong) :: nil))
       (Scall (Some _t'2)
-        (Evar _triangular (Tfunction (tuint :: nil) tuint cc_default))
-        ((Ebinop Odiv (Etempvar _n tuint) (Econst_int (Int.repr 15) tint)
-           tuint) :: nil)))
+        (Evar _triangular (Tfunction (tulong :: nil) tulong cc_default))
+        ((Ebinop Odiv (Etempvar _n tulong)
+           (Econst_long (Int64.repr 15) tulong) tulong) :: nil)))
     (Scall (Some _t'3)
-      (Evar _triangular (Tfunction (tuint :: nil) tuint cc_default))
-      ((Ebinop Odiv (Etempvar _n tuint) (Econst_int (Int.repr 5) tint) tuint) ::
-       nil)))
+      (Evar _triangular (Tfunction (tulong :: nil) tulong cc_default))
+      ((Ebinop Odiv (Etempvar _n tulong) (Econst_long (Int64.repr 5) tulong)
+         tulong) :: nil)))
   (Sreturn (Some (Ebinop Oadd
                    (Ebinop Osub
-                     (Ebinop Omul (Econst_int (Int.repr 3) tint)
-                       (Etempvar _t'1 tuint) tuint)
-                     (Ebinop Omul (Econst_int (Int.repr 15) tint)
-                       (Etempvar _t'2 tuint) tuint) tuint)
-                   (Ebinop Omul (Econst_int (Int.repr 5) tint)
-                     (Etempvar _t'3 tuint) tuint) tuint))))
+                     (Ebinop Omul (Econst_long (Int64.repr 3) tulong)
+                       (Etempvar _t'1 tulong) tulong)
+                     (Ebinop Omul (Econst_long (Int64.repr 15) tulong)
+                       (Etempvar _t'2 tulong) tulong) tulong)
+                   (Ebinop Omul (Econst_long (Int64.repr 5) tulong)
+                     (Etempvar _t'3 tulong) tulong) tulong))))
 |}.
 
 Definition f_main := {|
@@ -144,14 +144,14 @@ Definition f_main := {|
   fn_callconv := cc_default;
   fn_params := nil;
   fn_vars := nil;
-  fn_temps := ((_t'1, tuint) :: nil);
+  fn_temps := ((_t'1, tulong) :: nil);
   fn_body :=
 (Ssequence
   (Ssequence
     (Scall (Some _t'1)
-      (Evar _solution (Tfunction (tuint :: nil) tuint cc_default))
-      ((Econst_int (Int.repr 999) tint) :: nil))
-    (Sreturn (Some (Etempvar _t'1 tuint))))
+      (Evar _solution (Tfunction (tulong :: nil) tulong cc_default))
+      ((Econst_long (Int64.repr 999) tulong) :: nil))
+    (Sreturn (Some (Etempvar _t'1 tulong))))
   (Sreturn (Some (Econst_int (Int.repr 0) tint))))
 |}.
 
